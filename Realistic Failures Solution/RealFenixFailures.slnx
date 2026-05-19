@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="RealFenixFailures.Application/RealFenixFailures.Application.csproj" />
+  <Project Path="RealFenixFailures.Domain/RealFenixFailures.Domain.csproj" />
+  <Project Path="RealFenixFailures.Infrastructure/RealFenixFailures.Infrastructure.csproj" />
+  <Project Path="RealFenixFailures.Integrations.Fenix/RealFenixFailures.Integrations.Fenix.csproj" />
+  <Project Path="RealFenixFailures.Integrations.SimConnect/RealFenixFailures.Integrations.SimConnect.csproj" />
+  <Project Path="RealFenixFailures.UI/RealFenixFailures.UI.csproj" />
+</Solution>
