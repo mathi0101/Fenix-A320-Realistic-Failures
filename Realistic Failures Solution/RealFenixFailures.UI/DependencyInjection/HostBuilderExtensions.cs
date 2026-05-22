@@ -23,10 +23,10 @@ public static class HostBuilderExtensions {
                 services.AddInfrastructure(context.Configuration);
                 services.AddSimConnectIntegration();
                 services.AddFenixIntegration(context.Configuration);
+                services.AddTransient<DebugWindow>();
+                services.AddTransient<DebugViewModel>();
                 services.AddTransient<MainWindow>();
-                services.AddTransient<MainViewModel>();
-                services.AddTransient<NewWindow>();
-                services.AddTransient<NewViewModel>();
+                services.AddTransient<ViewModels.MainWindow>();
             });
     }
 }

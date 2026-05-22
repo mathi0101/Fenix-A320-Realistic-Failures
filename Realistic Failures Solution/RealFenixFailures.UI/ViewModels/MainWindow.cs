@@ -36,12 +36,12 @@ public class CustomPresetViewModel : ObservableObject {
 
 // ─── MainViewModel ─────────────────────────────────────────────────────────────
 
-public class NewViewModel : ObservableObject {
+public class MainWindow : ObservableObject {
     private readonly IFailureOrchestrator _orchestrator;
     private readonly IPresetService _presetService;
     private readonly IFlightHistoryService _flightHistoryService;   // NEW
     private readonly IFailureEngineSettings _settings;
-    private readonly ILogger<MainViewModel> _logger;
+    private readonly ILogger<DebugViewModel> _logger;
     private readonly DispatcherTimer _timer;
 
     // Connection state
@@ -74,12 +74,12 @@ public class NewViewModel : ObservableObject {
     private int _engine2WearPercent;
     private int _hydraulicsWearPercent;
 
-    public NewViewModel(
+    public MainWindow(
         IFailureOrchestrator orchestrator,
         IPresetService presetService,
         IFlightHistoryService flightHistoryService,
         IFailureEngineSettings settings,
-        ILogger<MainViewModel> logger) {
+        ILogger<DebugViewModel> logger) {
         _orchestrator = orchestrator;
         _presetService = presetService;
         _flightHistoryService = flightHistoryService;
@@ -294,19 +294,19 @@ public class NewViewModel : ObservableObject {
         TrainingScenarios.Clear();
         TrainingScenarios.Add(new TrainingScenarioViewModel {
             Id = Guid.NewGuid(),
-            Name = "Engine Failure After V1",
-            Description = "Falla de motor durante el roll de despegue, después de alcanzar V1.",
-            Phase = "TAKEOFF",
-            Difficulty = "MEDIUM",
-            TriggerDescription = "Se dispara automáticamente al detectar V1 durante el despegue."
-        });
-        TrainingScenarios.Add(new TrainingScenarioViewModel {
-            Id = Guid.NewGuid(),
             Name = "Engine Failure Before V1",
             Description = "Falla de motor antes de V1. Requiere rejected takeoff.",
             Phase = "TAKEOFF",
             Difficulty = "HARD",
             TriggerDescription = "Se dispara antes de alcanzar V1. Procedimiento: RTO."
+        });
+        TrainingScenarios.Add(new TrainingScenarioViewModel {
+            Id = Guid.NewGuid(),
+            Name = "Engine Failure After V1",
+            Description = "Falla de motor durante el roll de despegue, después de alcanzar V1.",
+            Phase = "TAKEOFF",
+            Difficulty = "MEDIUM",
+            TriggerDescription = "Se dispara automáticamente al detectar V1 durante el despegue."
         });
         TrainingScenarios.Add(new TrainingScenarioViewModel {
             Id = Guid.NewGuid(),

@@ -1,86 +1,863 @@
-<Window x:Class="RealFenixFailures.UI.MainWindow"
+﻿<Window x:Class="RealFenixFailures.UI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Realistic A320 Fenix Failures" Height="720" Width="500" MinHeight="720" MinWidth="600">
-    <Grid Margin="16">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="283*"/>
-            <ColumnDefinition Width="285*"/>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="2*" />
-        </Grid.RowDefinitions>
+        Title="Realistic A320 Fenix Failures"
+        Height="820" Width="1100"
+        MinHeight="720" MinWidth="900"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="CanResizeWithGrip">
 
-        <Border Grid.Row="0" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,12" Grid.ColumnSpan="2">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="MSFS2024 (SimConnect)" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding SimConnectStatus}" Margin="0,4,0,0" />
-                </StackPanel>
-                <StackPanel Grid.Column="1">
-                    <TextBlock Text="Fenix A320" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding FenixStatus}" Margin="0,4,0,0" />
-                </StackPanel>
-                <StackPanel Grid.Column="2">
-                    <TextBlock Text="Fase de vuelo" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding CurrentFlightPhase}" Margin="0,4,0,0" />
-                </StackPanel>
-            </Grid>
-        </Border>
+    <Window.Resources>
+        <Color x:Key="BgDeep">#0D0F14</Color>
+        <Color x:Key="BgCard">#13161E</Color>
+        <Color x:Key="BgCardHover">#1A1E28</Color>
+        <Color x:Key="AccentBlue">#3B82F6</Color>
+        <Color x:Key="AccentGreen">#22C55E</Color>
+        <Color x:Key="AccentAmber">#F59E0B</Color>
+        <Color x:Key="AccentRed">#EF4444</Color>
+        <Color x:Key="TextPrimary">#F1F5F9</Color>
+        <Color x:Key="TextSecondary">#64748B</Color>
+        <Color x:Key="Border">#1E2433</Color>
 
-        <Border Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="1" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,12,0">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Text="Presets" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
-                <ListBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Border BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,8">
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="0,4,0,0" />
-                                    <TextBlock Text="{Binding PresetType}" Margin="0,4,0,0" />
-                                    <TextBlock Text="{Binding FailureCount, StringFormat='Fallas: {0}'}" Margin="0,4,0,0" />
-                                </StackPanel>
+        <SolidColorBrush x:Key="BrBgDeep"      Color="{StaticResource BgDeep}"/>
+        <SolidColorBrush x:Key="BrBgCard"      Color="{StaticResource BgCard}"/>
+        <SolidColorBrush x:Key="BrBgCardHover" Color="{StaticResource BgCardHover}"/>
+        <SolidColorBrush x:Key="BrAccentBlue"  Color="{StaticResource AccentBlue}"/>
+        <SolidColorBrush x:Key="BrAccentGreen" Color="{StaticResource AccentGreen}"/>
+        <SolidColorBrush x:Key="BrAccentAmber" Color="{StaticResource AccentAmber}"/>
+        <SolidColorBrush x:Key="BrAccentRed"   Color="{StaticResource AccentRed}"/>
+        <SolidColorBrush x:Key="BrTextPrimary"   Color="{StaticResource TextPrimary}"/>
+        <SolidColorBrush x:Key="BrTextSecondary" Color="{StaticResource TextSecondary}"/>
+        <SolidColorBrush x:Key="BrBorder"       Color="{StaticResource Border}"/>
+
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- ProgressBar style for wear bars -->
+        <Style x:Key="WearBarStyle" TargetType="ProgressBar">
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="Background" Value="#1E2433"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="3">
+                            <Border x:Name="PART_Track">
+                                <Border x:Name="PART_Indicator"
+                                        Background="{TemplateBinding Foreground}"
+                                        CornerRadius="3"
+                                        HorizontalAlignment="Left"/>
                             </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
-        </Border>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-        
+        <!-- Mode Card RadioButton -->
+        <Style x:Key="ModeCardStyle" TargetType="RadioButton">
+            <Setter Property="Background" Value="{StaticResource BrBgCard}"/>
+            <Setter Property="Foreground" Value="{StaticResource BrTextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BrBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="16,14"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="CardBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CardBorder" Property="BorderBrush" Value="{StaticResource BrAccentBlue}"/>
+                                <Setter TargetName="CardBorder" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#1A2540" Offset="0"/>
+                                            <GradientStop Color="#13161E" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CardBorder" Property="Background" Value="{StaticResource BrBgCardHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-        <Border BorderThickness="1" CornerRadius="8" Padding="12" Margin="12" Grid.Column="1" Grid.RowSpan="2" Grid.Row="1">
-            <StackPanel>
-                <TextBlock Text="Controles" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
-                <Button Content="Refrescar" Command="{Binding RefreshCommand}" Height="20" Margin="5,4" />
-                <Button Height="25" Command="{Binding ToggleEngineCommand}" Content="{Binding EngineToggleText}" Margin="5,4" />
+        <!-- Scenario Item RadioButton -->
+        <Style x:Key="ScenarioItemStyle" TargetType="RadioButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource BrTextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BrBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="ScenBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="ScenBorder" Property="BorderBrush" Value="{StaticResource BrAccentBlue}"/>
+                                <Setter TargetName="ScenBorder" Property="Background">
+                                    <Setter.Value>
+                                        <SolidColorBrush Color="#1A2540"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ScenBorder" Property="Background" Value="{StaticResource BrBgCardHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                <TextBlock Text="Configuración" FontWeight="SemiBold" Margin="0,0,0,8" />
-                <TextBlock Text="Probabilidad global (0-1)" />
-                <TextBox Text="{Binding GlobalProbability, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,8" />
-                <TextBlock Text="Intervalo de chequeo (seg)" />
-                <TextBox Text="{Binding CheckIntervalSeconds, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,8" />
-                <Button Content="Aplicar configuración" Command="{Binding ApplySettingsCommand}" Height="32" />
+        <!-- Primary Button -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource BrAccentBlue}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Btn"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Btn" Property="Background" Value="#2563EB"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Btn" Property="Background" Value="#1D4ED8"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Btn" Property="Background" Value="#1E2433"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrTextSecondary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                <Border BorderThickness="1" CornerRadius="8" Padding="12" Margin="15">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Top" Text="Log en tiempo real" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
-                        <ListBox ItemsSource="{Binding LogEntries}" MinHeight="200" />
-                    </DockPanel>
+        <!-- Success Button -->
+        <Style x:Key="SuccessButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+            <Setter Property="Background" Value="#14532D"/>
+        </Style>
+
+        <!-- Ghost Button -->
+        <Style x:Key="GhostButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource BrTextSecondary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BrBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Btn"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Btn" Property="Background" Value="{StaticResource BrBgCardHover}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrTextPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Slider -->
+        <Style x:Key="DarkSliderStyle" TargetType="Slider">
+            <Setter Property="Foreground" Value="{StaticResource BrAccentBlue}"/>
+            <Setter Property="Background" Value="{StaticResource BrBorder}"/>
+        </Style>
+
+        <!-- Log entry -->
+        <Style x:Key="LogEntryStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{StaticResource BrTextSecondary}"/>
+            <Setter Property="Padding" Value="0,2"/>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{StaticResource BrBgDeep}"
+            CornerRadius="12"
+            BorderBrush="#1E2433"
+            BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="40" ShadowDepth="0" Opacity="0.6"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- TITLE BAR -->
+            <Border Grid.Row="0"
+                    Background="#0A0C10"
+                    CornerRadius="12,12,0,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid Margin="16,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Width="24" Height="24" CornerRadius="4"
+                                Background="#1E2433" Margin="0,0,10,0">
+                            <TextBlock Text="✈" FontSize="13"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{StaticResource BrAccentBlue}"/>
+                        </Border>
+                        <TextBlock Text="REALISTIC A320" FontSize="12" FontWeight="Bold"
+                                   Foreground="{StaticResource BrTextPrimary}" VerticalAlignment="Center"/>
+                        <TextBlock Text=" · FENIX FAILURES" FontSize="12"
+                                   Foreground="{StaticResource BrTextSecondary}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="─" Width="32" Height="32" Click="MinimizeWindow"
+                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="14"/>
+                        <Button Content="□" Width="32" Height="32" Click="MaximizeWindow"
+                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="12"/>
+                        <Button Content="✕" Width="32" Height="32" Click="CloseWindow"
+                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="12"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- STATUS BAR -->
+            <Border Grid.Row="1"
+                    Background="#0F1117"
+                    BorderBrush="{StaticResource BrBorder}"
+                    BorderThickness="0,0,0,1"
+                    Padding="20,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- SimConnect -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,24,0">
+                        <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <Ellipse.Fill>
+                                <SolidColorBrush Color="{Binding SimConnectDotColor}"/>
+                            </Ellipse.Fill>
+                        </Ellipse>
+                        <StackPanel>
+                            <TextBlock Text="MSFS 2024" FontSize="10" FontWeight="Bold"
+                                       Foreground="{StaticResource BrTextSecondary}"/>
+                            <TextBlock Text="{Binding SimConnectStatus}" FontSize="11"
+                                       Foreground="{Binding SimConnectStatusBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Rectangle Grid.Column="1" Width="1" Height="28"
+                               Fill="{StaticResource BrBorder}" Margin="0,0,24,0"/>
+
+                    <!-- Fenix -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,24,0">
+                        <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <Ellipse.Fill>
+                                <SolidColorBrush Color="{Binding FenixDotColor}"/>
+                            </Ellipse.Fill>
+                        </Ellipse>
+                        <StackPanel>
+                            <TextBlock Text="FENIX A320" FontSize="10" FontWeight="Bold"
+                                       Foreground="{StaticResource BrTextSecondary}"/>
+                            <TextBlock Text="{Binding FenixStatus}" FontSize="11"
+                                       Foreground="{Binding FenixStatusBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Flight Phase -->
+                    <Border Grid.Column="3" HorizontalAlignment="Center"
+                            Background="#1A2540" CornerRadius="20" Padding="14,4">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="FASE: " FontSize="10" FontWeight="Bold"
+                                       Foreground="{StaticResource BrTextSecondary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CurrentFlightPhaseDisplay}" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{StaticResource BrAccentBlue}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Grid.Column="4" Content="↻  Refresh"
+                            Command="{Binding RefreshCommand}"
+                            Style="{StaticResource GhostButtonStyle}"
+                            FontSize="11"/>
+                </Grid>
+            </Border>
+
+            <!-- MAIN CONTENT -->
+            <Grid Grid.Row="2" Margin="20,16,20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="260"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- LEFT: Mode selector -->
+                <DockPanel Grid.Column="0" Margin="0,0,16,0">
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="MODOS" FontSize="10" FontWeight="Bold"
+                               Foreground="{StaticResource BrTextSecondary}" Margin="0,0,0,12"/>
+                    <StackPanel DockPanel.Dock="Top">
+
+                        <RadioButton Style="{StaticResource ModeCardStyle}"
+                                     IsChecked="{Binding IsTrainingModeSelected}"
+                                     GroupName="AppMode">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                        Background="#1C2A3A" VerticalAlignment="Center">
+                                    <TextBlock Text="🎓" FontSize="16"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Entrenamiento" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{StaticResource BrTextPrimary}"/>
+                                    <TextBlock Text="Escenarios preestablecidos" FontSize="11"
+                                               Foreground="{StaticResource BrTextSecondary}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </RadioButton>
+
+                        <RadioButton Style="{StaticResource ModeCardStyle}"
+                                     IsChecked="{Binding IsCustomModeSelected}"
+                                     GroupName="AppMode">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                        Background="#1C2A1C" VerticalAlignment="Center">
+                                    <TextBlock Text="⚙️" FontSize="16"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Personalizado" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{StaticResource BrTextPrimary}"/>
+                                    <TextBlock Text="Control manual de fallas" FontSize="11"
+                                               Foreground="{StaticResource BrTextSecondary}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </RadioButton>
+
+                        <RadioButton Style="{StaticResource ModeCardStyle}"
+                                     IsChecked="{Binding IsRealisticModeSelected}"
+                                     GroupName="AppMode">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                        Background="#2A1C1C" VerticalAlignment="Center">
+                                    <TextBlock Text="🛩️" FontSize="16"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Realista" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{StaticResource BrTextPrimary}"/>
+                                    <TextBlock Text="Basado en historial de vuelos" FontSize="11"
+                                               Foreground="{StaticResource BrTextSecondary}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </RadioButton>
+
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- RIGHT: Mode content panel — single child Grid inside Border -->
+                <Border Grid.Column="1"
+                        Background="{StaticResource BrBgCard}"
+                        BorderBrush="{StaticResource BrBorder}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="20">
+                    <Grid>
+
+                        <!-- ─── TRAINING MODE PANEL ─── -->
+                        <Grid Visibility="{Binding IsTrainingModeSelected, Converter={StaticResource BoolToVis}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                                <TextBlock Text="MODO ENTRENAMIENTO" FontSize="10" FontWeight="Bold"
+                                           Foreground="{StaticResource BrAccentBlue}"/>
+                                <TextBlock Text="Seleccioná un escenario para practicar procedimientos de emergencia."
+                                           FontSize="12" Foreground="{StaticResource BrTextSecondary}"
+                                           TextWrapping="Wrap" Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding TrainingScenarios}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <RadioButton Style="{StaticResource ScenarioItemStyle}"
+                                                         IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                         GroupName="TrainingScenario"
+                                                         Command="{Binding DataContext.SelectTrainingScenarioCommand,
+                                                                   RelativeSource={RelativeSource AncestorType=Window}}"
+                                                         CommandParameter="{Binding}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource BrTextPrimary}"/>
+                                                        <TextBlock Text="{Binding Description}" FontSize="11"
+                                                                   Foreground="{StaticResource BrTextSecondary}"
+                                                                   TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                                            <Border Background="#1A2540" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                                                <TextBlock Text="{Binding Phase}" FontSize="10"
+                                                                           Foreground="{StaticResource BrAccentBlue}"/>
+                                                            </Border>
+                                                            <Border Background="#1A2A1A" CornerRadius="4" Padding="6,2">
+                                                                <TextBlock Text="{Binding Difficulty}" FontSize="10"
+                                                                           Foreground="{StaticResource BrAccentGreen}"/>
+                                                            </Border>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Text="▶" FontSize="14"
+                                                               Foreground="{StaticResource BrTextSecondary}"
+                                                               VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                                </Grid>
+                                            </RadioButton>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <StackPanel Grid.Row="2" Margin="0,16,0,0">
+                                <Border Background="#0D0F14" CornerRadius="8" Padding="14" Margin="0,0,0,12"
+                                        Visibility="{Binding HasSelectedTrainingScenario, Converter={StaticResource BoolToVis}}">
+                                    <StackPanel>
+                                        <TextBlock Text="ESCENARIO SELECCIONADO" FontSize="10" FontWeight="Bold"
+                                                   Foreground="{StaticResource BrTextSecondary}"/>
+                                        <TextBlock Text="{Binding SelectedTrainingScenario.Name}" FontSize="14"
+                                                   FontWeight="SemiBold" Foreground="{StaticResource BrTextPrimary}"
+                                                   Margin="0,4,0,0"/>
+                                        <TextBlock Text="{Binding SelectedTrainingScenario.TriggerDescription}"
+                                                   FontSize="11" Foreground="{StaticResource BrTextSecondary}"
+                                                   TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Button Content="▶  INICIAR ESCENARIO"
+                                        Command="{Binding StartTrainingScenarioCommand}"
+                                        Style="{StaticResource PrimaryButtonStyle}"
+                                        Height="40"
+                                        IsEnabled="{Binding CanStartEngine}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- ─── CUSTOM MODE PANEL ─── -->
+                        <Grid Visibility="{Binding IsCustomModeSelected, Converter={StaticResource BoolToVis}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                                <TextBlock Text="MODO PERSONALIZADO" FontSize="10" FontWeight="Bold"
+                                           Foreground="{StaticResource BrAccentGreen}"/>
+                                <TextBlock Text="Configurá y disparás fallas manualmente durante el vuelo."
+                                           FontSize="12" Foreground="{StaticResource BrTextSecondary}"
+                                           TextWrapping="Wrap" Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <Border Grid.Row="1" Background="#0D0F14" CornerRadius="8" Padding="14" Margin="0,0,0,16">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <TextBlock Text="Probabilidad" FontSize="11"
+                                                       Foreground="{StaticResource BrTextSecondary}"/>
+                                            <TextBlock Text="{Binding GlobalProbability, StringFormat=' {0:P0}'}"
+                                                       FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource BrTextPrimary}" Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                        <Slider Style="{StaticResource DarkSliderStyle}"
+                                                Minimum="0" Maximum="1" TickFrequency="0.05"
+                                                Value="{Binding GlobalProbability, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <TextBlock Text="Intervalo" FontSize="11"
+                                                       Foreground="{StaticResource BrTextSecondary}"/>
+                                            <TextBlock Text="{Binding CheckIntervalSeconds, StringFormat=' {0}s'}"
+                                                       FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource BrTextPrimary}" Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                        <Slider Style="{StaticResource DarkSliderStyle}"
+                                                Minimum="5" Maximum="300" TickFrequency="5"
+                                                Value="{Binding CheckIntervalSeconds, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                        <TextBlock Text="PRESETS PERSONALIZADOS" FontSize="10" FontWeight="Bold"
+                                                   Foreground="{StaticResource BrTextSecondary}"
+                                                   VerticalAlignment="Center"/>
+                                        <Button Content="+ Nuevo" Command="{Binding CreateCustomPresetCommand}"
+                                                Style="{StaticResource GhostButtonStyle}"
+                                                Margin="12,0,0,0" FontSize="10" Padding="8,4"/>
+                                    </StackPanel>
+                                    <ItemsControl ItemsSource="{Binding CustomPresets}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#0D0F14" BorderBrush="{StaticResource BrBorder}"
+                                                        BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource BrTextPrimary}"/>
+                                                            <TextBlock Text="{Binding FailureCount, StringFormat='{}{0} fallas configuradas'}"
+                                                                       FontSize="11" Foreground="{StaticResource BrTextSecondary}"
+                                                                       Margin="0,3,0,0"/>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                            <Button Content="▶" Width="32" Height="32"
+                                                                    Command="{Binding DataContext.ActivateCustomPresetCommand,
+                                                                              RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Style="{StaticResource PrimaryButtonStyle}"
+                                                                    Padding="0" FontSize="12"/>
+                                                            <Button Content="✕" Width="32" Height="32"
+                                                                    Command="{Binding DataContext.DeleteCustomPresetCommand,
+                                                                              RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Style="{StaticResource GhostButtonStyle}"
+                                                                    Padding="0" FontSize="12" Margin="6,0,0,0"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <StackPanel Grid.Row="3" Margin="0,16,0,0">
+                                <Button Command="{Binding ToggleEngineCommand}"
+                                        Height="40" IsEnabled="{Binding CanStartEngine}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEngineActive}" Value="True">
+                                                    <Setter Property="Background" Value="#7F1D1D"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                    <TextBlock Text="{Binding EngineToggleText}" FontWeight="SemiBold"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- ─── REALISTIC MODE PANEL ─── -->
+                        <Grid Visibility="{Binding IsRealisticModeSelected, Converter={StaticResource BoolToVis}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                                <TextBlock Text="MODO REALISTA" FontSize="10" FontWeight="Bold"
+                                           Foreground="{StaticResource BrAccentAmber}"/>
+                                <TextBlock Text="El sistema monitorea el historial de vuelos y genera fallas de forma autónoma basándose en el desgaste acumulado. No hay interacción manual."
+                                           FontSize="12" Foreground="{StaticResource BrTextSecondary}"
+                                           TextWrapping="Wrap" Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <Grid Grid.Row="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Stats cards -->
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="#0D0F14" CornerRadius="8" Padding="12" Margin="0,0,8,0">
+                                        <StackPanel>
+                                            <TextBlock Text="VUELOS" FontSize="9" FontWeight="Bold"
+                                                       Foreground="{StaticResource BrTextSecondary}"/>
+                                            <TextBlock Text="{Binding TotalFlights}" FontSize="22" FontWeight="Bold"
+                                                       Foreground="{StaticResource BrTextPrimary}" Margin="0,4,0,0"/>
+                                            <TextBlock Text="registrados" FontSize="10"
+                                                       Foreground="{StaticResource BrTextSecondary}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="1" Background="#0D0F14" CornerRadius="8" Padding="12" Margin="0,0,8,0">
+                                        <StackPanel>
+                                            <TextBlock Text="HORAS" FontSize="9" FontWeight="Bold"
+                                                       Foreground="{StaticResource BrTextSecondary}"/>
+                                            <TextBlock Text="{Binding TotalFlightHours, StringFormat='{}{0:F1}'}"
+                                                       FontSize="22" FontWeight="Bold"
+                                                       Foreground="{StaticResource BrTextPrimary}" Margin="0,4,0,0"/>
+                                            <TextBlock Text="acumuladas" FontSize="10"
+                                                       Foreground="{StaticResource BrTextSecondary}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="2" Background="#0D0F14" CornerRadius="8" Padding="12">
+                                        <StackPanel>
+                                            <TextBlock Text="FALLAS" FontSize="9" FontWeight="Bold"
+                                                       Foreground="{StaticResource BrTextSecondary}"/>
+                                            <TextBlock Text="{Binding TotalFailuresTriggered}"
+                                                       FontSize="22" FontWeight="Bold"
+                                                       Foreground="{StaticResource BrAccentAmber}" Margin="0,4,0,0"/>
+                                            <TextBlock Text="generadas" FontSize="10"
+                                                       Foreground="{StaticResource BrTextSecondary}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Wear bars -->
+                                <Border Grid.Row="1" Background="#0D0F14" CornerRadius="8" Padding="14" Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <TextBlock Text="DESGASTE DE SISTEMAS" FontSize="10" FontWeight="Bold"
+                                                   Foreground="{StaticResource BrTextSecondary}" Margin="0,0,0,12"/>
+
+                                        <!-- Engine 1 -->
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="40"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Motor 1" FontSize="11"
+                                                       Foreground="{StaticResource BrTextSecondary}" VerticalAlignment="Center"/>
+                                            <ProgressBar Grid.Column="1" Style="{StaticResource WearBarStyle}"
+                                                         Minimum="0" Maximum="100"
+                                                         Value="{Binding Engine1WearPercent}"
+                                                         Foreground="{Binding Engine1WearBrush}"
+                                                         VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding Engine1WearPercent, StringFormat='{}{0}%'}"
+                                                       FontSize="11" Foreground="{StaticResource BrTextPrimary}"
+                                                       HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                        </Grid>
+
+                                        <!-- Engine 2 -->
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="40"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Motor 2" FontSize="11"
+                                                       Foreground="{StaticResource BrTextSecondary}" VerticalAlignment="Center"/>
+                                            <ProgressBar Grid.Column="1" Style="{StaticResource WearBarStyle}"
+                                                         Minimum="0" Maximum="100"
+                                                         Value="{Binding Engine2WearPercent}"
+                                                         Foreground="{Binding Engine2WearBrush}"
+                                                         VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding Engine2WearPercent, StringFormat='{}{0}%'}"
+                                                       FontSize="11" Foreground="{StaticResource BrTextPrimary}"
+                                                       HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                        </Grid>
+
+                                        <!-- Hydraulics -->
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="40"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Hidráulico" FontSize="11"
+                                                       Foreground="{StaticResource BrTextSecondary}" VerticalAlignment="Center"/>
+                                            <ProgressBar Grid.Column="1" Style="{StaticResource WearBarStyle}"
+                                                         Minimum="0" Maximum="100"
+                                                         Value="{Binding HydraulicsWearPercent}"
+                                                         Foreground="{Binding HydraulicsWearBrush}"
+                                                         VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding HydraulicsWearPercent, StringFormat='{}{0}%'}"
+                                                       FontSize="11" Foreground="{StaticResource BrTextPrimary}"
+                                                       HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Connection warning -->
+                                <Border Grid.Row="2"
+                                        Background="#2A1C0A" BorderBrush="#F59E0B" BorderThickness="1"
+                                        CornerRadius="8" Padding="12"
+                                        Visibility="{Binding ShowConnectionWarning, Converter={StaticResource BoolToVis}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="⚠" FontSize="16" Foreground="{StaticResource BrAccentAmber}"
+                                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBlock Text="Conectá MSFS 2024 y Fenix A320 para activar el modo realista."
+                                                   FontSize="12" Foreground="{StaticResource BrAccentAmber}"
+                                                   TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- Toggle button -->
+                            <Button Grid.Row="2" Height="48" Margin="0,16,0,0"
+                                    Command="{Binding ToggleRealisticModeCommand}"
+                                    IsEnabled="{Binding CanStartEngine}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource SuccessButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsEngineActive}" Value="True">
+                                                <Setter Property="Background" Value="#7F1D1D"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock VerticalAlignment="Center" FontSize="16" Margin="0,0,10,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="⏵"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEngineActive}" Value="True">
+                                                        <Setter Property="Text" Value="⏹"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="ACTIVAR MODO REALISTA"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEngineActive}" Value="True">
+                                                        <Setter Property="Text" Value="DETENER MODO REALISTA"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                    </Grid>
                 </Border>
-            </StackPanel>
-            
-        </Border>
-    </Grid>
+            </Grid>
+
+            <!-- LOG FOOTER -->
+            <Border Grid.Row="3"
+                    Background="#0A0C10"
+                    BorderBrush="{StaticResource BrBorder}"
+                    BorderThickness="0,1,0,0"
+                    CornerRadius="0,0,12,12"
+                    Padding="20,10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="80"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="LOG EN TIEMPO REAL" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource BrTextSecondary}" VerticalAlignment="Center"/>
+                        <Border Background="#14532D" CornerRadius="10" Padding="8,2" Margin="12,0,0,0"
+                                Visibility="{Binding IsEngineActive, Converter={StaticResource BoolToVis}}">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="6" Height="6" Fill="{StaticResource BrAccentGreen}"
+                                         VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="ACTIVO" FontSize="9" FontWeight="Bold"
+                                           Foreground="{StaticResource BrAccentGreen}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" x:Name="LogScrollViewer">
+                        <ItemsControl ItemsSource="{Binding LogEntries}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Style="{StaticResource LogEntryStyle}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+        </Grid>
+    </Border>
 </Window>

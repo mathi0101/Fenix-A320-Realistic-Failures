@@ -9,11 +9,11 @@ using System.Windows.Threading;
 
 namespace RealFenixFailures.UI.ViewModels;
 
-public class MainViewModel : ObservableObject {
+public class DebugViewModel : ObservableObject {
     private readonly IFailureOrchestrator _orchestrator;
     private readonly IPresetService _presetService;
     private readonly IFailureEngineSettings _settings;
-    private readonly ILogger<MainViewModel> _logger;
+    private readonly ILogger<DebugViewModel> _logger;
     private readonly DispatcherTimer _timer;
 
     private string _simConnectStatus = "Disconnected";
@@ -24,11 +24,11 @@ public class MainViewModel : ObservableObject {
     private double _globalProbability;
     private int _checkIntervalSeconds;
 
-    public MainViewModel(
+    public DebugViewModel(
         IFailureOrchestrator orchestrator,
         IPresetService presetService,
         IFailureEngineSettings settings,
-        ILogger<MainViewModel> logger) {
+        ILogger<DebugViewModel> logger) {
         _orchestrator = orchestrator;
         _presetService = presetService;
         _settings = settings;

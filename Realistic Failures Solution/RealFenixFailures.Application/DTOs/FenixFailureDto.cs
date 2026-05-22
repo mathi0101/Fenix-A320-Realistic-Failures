@@ -1,7 +1,8 @@
 namespace RealFenixFailures.Application.DTOs;
 
 public sealed record FenixFailureDto(
-    string Id,
+    string FenixId,
+    string Description,
     bool Failed,
-    string? Name
+    FenixFailureConditionDto? FailureCondition
 );
