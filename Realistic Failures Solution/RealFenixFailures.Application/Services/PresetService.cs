@@ -15,7 +15,7 @@ public class PresetService : IPresetService {
         throw new NotImplementedException();
     }
 
-    public Task DeletePresetAsync(Guid id, CancellationToken none) {
+    public Task DeletePresetAsync(int id, CancellationToken none) {
         throw new NotImplementedException();
     }
 

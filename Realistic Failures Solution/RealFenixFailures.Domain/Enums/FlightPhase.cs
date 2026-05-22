@@ -10,6 +10,5 @@ public enum FlightPhase {
     Descent = 6,
     Approach = 7,
     Landing = 8,
-    Parked = 9,
-    Any = 10
+    Parked = 9
 }

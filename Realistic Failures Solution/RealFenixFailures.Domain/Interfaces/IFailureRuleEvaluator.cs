@@ -5,5 +5,5 @@ namespace RealFenixFailures.Domain.Interfaces;
 
 public interface IFailureRuleEvaluator
 {
-    IReadOnlyList<FailureDefinition> EvaluateEligibleFailures(IEnumerable<FailureDefinition> candidates, FlightPhase currentPhase);
+    IReadOnlyList<FenixFailureDefinition> EvaluateEligibleFailures(IEnumerable<FenixFailureDefinition> candidates, FlightPhase currentPhase);
 }

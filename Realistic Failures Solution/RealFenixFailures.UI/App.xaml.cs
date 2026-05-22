@@ -26,8 +26,8 @@ public partial class App : System.Windows.Application {
         var dbContext = scope.ServiceProvider.GetRequiredService<RealFenixDbContext>();
         await dbContext.Database.MigrateAsync();
 
-        var window = _host.Services.GetRequiredService<DebugWindow>();
-        window.Show();
+        //var window = _host.Services.GetRequiredService<DebugWindow>();
+        //window.Show();
         var newWindow = _host.Services.GetRequiredService<MainWindow>();
         newWindow.Show();
 

@@ -6,10 +6,10 @@ namespace RealFenixFailures.Integrations.Fenix.Services;
 
 public class FenixFailureDispatcher : IFenixFailureDispatcher
 {
-    private readonly IFenixFailureService _failureService;
+    private readonly IFenixApiFailureService _failureService;
     private readonly ILogger<FenixFailureDispatcher> _logger;
 
-    public FenixFailureDispatcher(IFenixFailureService failureService, ILogger<FenixFailureDispatcher> logger)
+    public FenixFailureDispatcher(IFenixApiFailureService failureService, ILogger<FenixFailureDispatcher> logger)
     {
         _failureService = failureService;
         _logger = logger;
@@ -20,9 +20,9 @@ public class FenixFailureDispatcher : IFenixFailureDispatcher
         return _failureService.IsApiAvailableAsync(cancellationToken);
     }
 
-    public async Task TriggerFailureAsync(FailureDefinition failureDefinition, CancellationToken cancellationToken)
+    public async Task TriggerFailureAsync(FenixFailureDefinition failureDefinition, CancellationToken cancellationToken)
     {
-        var fenixFailureId = failureDefinition.ExternalFailureId;
+        var fenixFailureId = failureDefinition.FenixFailureId;
         if (string.IsNullOrWhiteSpace(fenixFailureId))
         {
             _logger.LogWarning("No Fenix external failure id configured for domain failure {FailureName}", failureDefinition.Name);

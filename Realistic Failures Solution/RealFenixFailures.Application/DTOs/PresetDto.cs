@@ -3,7 +3,7 @@ using RealFenixFailures.Domain.Enums;
 namespace RealFenixFailures.Application.DTOs;
 
 public sealed record PresetDto(
-    Guid Id,
+    int Id,
     string Name,
     string Description,
     PresetType PresetType,

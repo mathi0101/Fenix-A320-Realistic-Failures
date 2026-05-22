@@ -26,7 +26,7 @@ public static class HostBuilderExtensions {
                 services.AddTransient<DebugWindow>();
                 services.AddTransient<DebugViewModel>();
                 services.AddTransient<MainWindow>();
-                services.AddTransient<ViewModels.MainWindow>();
+                services.AddTransient<ViewModels.MainWindowViewModel>();
             });
     }
 }

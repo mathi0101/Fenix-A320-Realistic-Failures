@@ -2,9 +2,8 @@ using RealFenixFailures.Domain.Enums;
 
 namespace RealFenixFailures.Infrastructure.Persistence;
 
-public class FailureEngineSettings
-{
-    public const string SectionName = "FailureEngine";
+public class FenixEngineSettings {
+    public const string SectionName = "FenixEngine";
 
     public double GlobalProbability { get; set; } = 0.05;
     public int CheckIntervalSeconds { get; set; } = 10;

@@ -4,20 +4,15 @@ using RealFenixFailures.Domain.Interfaces.Repositories;
 
 namespace RealFenixFailures.Application.Services;
 
-public class SessionService : ISessionService
-{
+public class SessionService : ISessionService {
     private readonly IFlightSessionRepository _sessionRepository;
 
-    public SessionService(IFlightSessionRepository sessionRepository)
-    {
+    public SessionService(IFlightSessionRepository sessionRepository) {
         _sessionRepository = sessionRepository;
     }
 
-    public async Task<FlightSession> StartSessionAsync(Guid presetId, CancellationToken cancellationToken)
-    {
-        var session = new FlightSession
-        {
-            Id = Guid.NewGuid(),
+    public async Task<FlightSession> StartSessionAsync(int presetId, CancellationToken cancellationToken) {
+        var session = new FlightSession {
             StartedAtUtc = DateTimeOffset.UtcNow,
             PresetId = presetId
         };

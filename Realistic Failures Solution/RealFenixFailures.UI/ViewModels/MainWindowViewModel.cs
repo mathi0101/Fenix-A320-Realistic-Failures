@@ -3,45 +3,25 @@ using global::RealFenixFailures.Domain.Enums;
 using global::RealFenixFailures.UI.Commands;
 using global::RealFenixFailures.UI.ViewModels.Base;
 using Microsoft.Extensions.Logging;
+using RealFenixFailures.Application.Services;
 using RealFenixFailures.Domain.Interfaces;
+using RealFenixFailures.UI.ViewModels.Extra;
 using System.Collections.ObjectModel;
 using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace RealFenixFailures.UI.ViewModels;
 
-// ─── DTOs de UI ────────────────────────────────────────────────────────────────
-
-public class TrainingScenarioViewModel : ObservableObject {
-    private bool _isSelected;
-
-    public Guid Id { get; init; }
-    public string Name { get; init; } = string.Empty;
-    public string Description { get; init; } = string.Empty;
-    public string Phase { get; init; } = string.Empty;
-    public string Difficulty { get; init; } = string.Empty;
-    public string TriggerDescription { get; init; } = string.Empty;
-
-    public bool IsSelected {
-        get => _isSelected;
-        set => SetProperty(ref _isSelected, value);
-    }
-}
-
-public class CustomPresetViewModel : ObservableObject {
-    public Guid Id { get; init; }
-    public string Name { get; init; } = string.Empty;
-    public int FailureCount { get; init; }
-}
-
 // ─── MainViewModel ─────────────────────────────────────────────────────────────
 
-public class MainWindow : ObservableObject {
+public class MainWindowViewModel : ObservableObject {
     private readonly IFailureOrchestrator _orchestrator;
+    private readonly IFailurePersistenceService _failurePersistenceService;
     private readonly IPresetService _presetService;
+    private readonly ITrainingPresetService _trainingPresetService;
     private readonly IFlightHistoryService _flightHistoryService;   // NEW
     private readonly IFailureEngineSettings _settings;
-    private readonly ILogger<DebugViewModel> _logger;
+    private readonly ILogger<MainWindowViewModel> _logger;
     private readonly DispatcherTimer _timer;
 
     // Connection state
@@ -55,9 +35,9 @@ public class MainWindow : ObservableObject {
     private bool _isEngineActive;
 
     // Mode selection
+    private bool _isRealisticModeSelected;
     private bool _isTrainingModeSelected = true;
     private bool _isCustomModeSelected;
-    private bool _isRealisticModeSelected;
 
     // Training
     private TrainingScenarioViewModel? _selectedTrainingScenario;
@@ -74,14 +54,18 @@ public class MainWindow : ObservableObject {
     private int _engine2WearPercent;
     private int _hydraulicsWearPercent;
 
-    public MainWindow(
+    public MainWindowViewModel(
         IFailureOrchestrator orchestrator,
+        IFailurePersistenceService failurePersistenceService,
         IPresetService presetService,
+        ITrainingPresetService trainingPresetService,
         IFlightHistoryService flightHistoryService,
         IFailureEngineSettings settings,
-        ILogger<DebugViewModel> logger) {
+        ILogger<MainWindowViewModel> logger) {
         _orchestrator = orchestrator;
+        _failurePersistenceService = failurePersistenceService;
         _presetService = presetService;
+        _trainingPresetService = trainingPresetService;
         _flightHistoryService = flightHistoryService;
         _settings = settings;
         _logger = logger;
@@ -106,8 +90,6 @@ public class MainWindow : ObservableObject {
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(_checkIntervalSeconds) };
         _timer.Tick += async (_, _) => await PollAsync();
         _timer.Start();
-
-        LoadTrainingScenarios();
     }
 
     // ── Collections ──────────────────────────────────────────────────────────
@@ -282,72 +264,38 @@ public class MainWindow : ObservableObject {
 
     // ── Init ──────────────────────────────────────────────────────────────────
 
+    #region Init
+
     public async Task InitializeAsync() {
+        await _failurePersistenceService.InitializeAsync(CancellationToken.None);
+        await LoadTrainingScenarios();
         await RefreshAsync();
     }
 
+    #endregion
+
     // ── Private methods ───────────────────────────────────────────────────────
 
-    private void LoadTrainingScenarios() {
+    #region Private methods
+
+
+    private async Task LoadTrainingScenarios() {
         // These are hardcoded UI scenarios; the actual preset IDs are resolved
         // by the orchestrator when a scenario is started.
         TrainingScenarios.Clear();
-        TrainingScenarios.Add(new TrainingScenarioViewModel {
-            Id = Guid.NewGuid(),
-            Name = "Engine Failure Before V1",
-            Description = "Falla de motor antes de V1. Requiere rejected takeoff.",
-            Phase = "TAKEOFF",
-            Difficulty = "HARD",
-            TriggerDescription = "Se dispara antes de alcanzar V1. Procedimiento: RTO."
-        });
-        TrainingScenarios.Add(new TrainingScenarioViewModel {
-            Id = Guid.NewGuid(),
-            Name = "Engine Failure After V1",
-            Description = "Falla de motor durante el roll de despegue, después de alcanzar V1.",
-            Phase = "TAKEOFF",
-            Difficulty = "MEDIUM",
-            TriggerDescription = "Se dispara automáticamente al detectar V1 durante el despegue."
-        });
-        TrainingScenarios.Add(new TrainingScenarioViewModel {
-            Id = Guid.NewGuid(),
-            Name = "Engine Failure After V2",
-            Description = "Falla de motor luego de pasar V2 en ascenso inicial.",
-            Phase = "CLIMB",
-            Difficulty = "MEDIUM",
-            TriggerDescription = "Se dispara al superar V2 en el ascenso inicial."
-        });
-        TrainingScenarios.Add(new TrainingScenarioViewModel {
-            Id = Guid.NewGuid(),
-            Name = "Hydraulic System Failure",
-            Description = "Pérdida del sistema hidráulico azul en crucero.",
-            Phase = "CRUISE",
-            Difficulty = "MEDIUM",
-            TriggerDescription = "Se dispara aleatoriamente durante la fase de crucero."
-        });
-        TrainingScenarios.Add(new TrainingScenarioViewModel {
-            Id = Guid.NewGuid(),
-            Name = "Dual Bleed Failure",
-            Description = "Falla de sangrado en ambos motores. Pérdida de presurización.",
-            Phase = "CRUISE",
-            Difficulty = "HARD",
-            TriggerDescription = "Se dispara en crucero. Requiere descenso de emergencia."
-        });
-        TrainingScenarios.Add(new TrainingScenarioViewModel {
-            Id = Guid.NewGuid(),
-            Name = "GPWS Warning on Approach",
-            Description = "Activación de GPWS durante la aproximación final.",
-            Phase = "APPROACH",
-            Difficulty = "EASY",
-            TriggerDescription = "Se dispara en la aproximación final por debajo de 1000ft AGL."
-        });
-        TrainingScenarios.Add(new TrainingScenarioViewModel {
-            Id = Guid.NewGuid(),
-            Name = "Gear Not Down on Final",
-            Description = "Tren de aterrizaje no baja correctamente en la final.",
-            Phase = "APPROACH",
-            Difficulty = "HARD",
-            TriggerDescription = "Se dispara al seleccionar gear down en la aproximación."
-        });
+        var presets = await _trainingPresetService.GetTrainingPresetsAsync(CancellationToken.None);
+        if (presets.Count == 0) return;
+        foreach (var p in presets) {
+            TrainingScenarios.Add(
+                new TrainingScenarioViewModel() {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    TriggerDescription = p.TriggerDescription,
+                    Phase = p.Phase.ToString(),
+                    Difficulty = p.Difficulty.ToString(),
+                });
+        }
     }
 
     private void SelectTrainingScenario(TrainingScenarioViewModel? scenario) {
@@ -475,4 +423,6 @@ public class MainWindow : ObservableObject {
         Engine2WearPercent = stats.Engine2WearPercent;
         HydraulicsWearPercent = stats.HydraulicsWearPercent;
     }
+    #endregion
+
 }

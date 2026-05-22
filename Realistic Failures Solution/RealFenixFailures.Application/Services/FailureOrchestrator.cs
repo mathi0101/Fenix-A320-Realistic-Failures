@@ -17,9 +17,10 @@ public class FailureOrchestrator : IFailureOrchestrator {
     private readonly IFailureEngineSettings _settings;
     private readonly List<FailureTriggerLogDto> _recentLogs = new();
 
-    private Guid? _activePresetId;
+    private int? _activePresetId;
     private FailurePreset? _activePreset;
     private FlightSession? _activeSession;
+    public bool IsEngineActive { get; private set; }
 
     public FailureOrchestrator(
         IFailureEngine failureEngine,
@@ -38,9 +39,7 @@ public class FailureOrchestrator : IFailureOrchestrator {
         _settings = settings;
     }
 
-    public bool IsEngineActive { get; private set; }
-
-    public async Task SetActivePresetAsync(Guid presetId, CancellationToken cancellationToken) {
+    public async Task SetActivePresetAsync(int presetId, CancellationToken cancellationToken) {
         _activePresetId = presetId;
         _activePreset = await _presetRepository.GetByIdAsync(presetId, cancellationToken);
         _activeSession = null;
@@ -114,7 +113,9 @@ public class FailureOrchestrator : IFailureOrchestrator {
         _recentLogs.Add(new FailureTriggerLogDto(trigger.TriggeredAtUtc, failure.Name, phase, _activePreset.Name));
     }
 
-    public Task StartTrainingScenarioAsync(Guid id, CancellationToken none) {
+    public Task StartTrainingScenarioAsync(int id, CancellationToken none) {
         throw new NotImplementedException();
     }
+
+
 }

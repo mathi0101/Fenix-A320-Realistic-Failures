@@ -3,20 +3,21 @@ using Microsoft.Extensions.Options;
 using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Integrations.Fenix.Interfaces;
+using RealFenixFailures.Integrations.Fenix.Mappers;
 using RealFenixFailures.Integrations.Fenix.Models;
 
 namespace RealFenixFailures.Integrations.Fenix.Services;
 
-public class FenixFailureService : IFenixFailureService {
+public class FenixApiFailureService : IFenixApiFailureService {
     private readonly IFenixApiClient _apiClient;
     private readonly IOptionsMonitor<FenixApiOptions> _optionsMonitor;
-    private readonly ILogger<FenixFailureService> _logger;
+    private readonly ILogger<FenixApiFailureService> _logger;
     private readonly SemaphoreSlim _healthLock = new(1, 1);
 
     private DateTimeOffset _lastHealthCheckAtUtc = DateTimeOffset.MinValue;
     private bool _lastHealthCheckResult;
 
-    public FenixFailureService(IFenixApiClient apiClient, IOptionsMonitor<FenixApiOptions> optionsMonitor, ILogger<FenixFailureService> logger) {
+    public FenixApiFailureService(IFenixApiClient apiClient, IOptionsMonitor<FenixApiOptions> optionsMonitor, ILogger<FenixApiFailureService> logger) {
         _apiClient = apiClient;
         _optionsMonitor = optionsMonitor;
         _logger = logger;
@@ -31,19 +32,10 @@ public class FenixFailureService : IFenixFailureService {
 
         UpdateHealthState(true);
 
-
-        return new AllFenixFailuresResponseDto {
-            MajorGroups =
-            [..response.Atas.Select(
-                block => new FenixMajorSystemGroupDto(block.Title, block.ShortTitle, block.Groups.Select(
-                    group => new FenixSystemGroupDto(group.GroupName, group.Failures.Select(
-                        failure => new FenixFailureDto(failure.Id, failure.Title, failure.Failed,
-                        failure.FailureCondition is FenixFailureCondition fc ?
-                        new FenixFailureConditionDto(fc.Id, fc.Ias, fc.Alt, fc.Altb, fc.Time, fc.AfterEvent, fc.AfterEventSeconds) : null
-                        )).ToList())).ToList())
-                )]
-        };
+        return FenixMappers.FenixJsonFailuresToDto(response);
     }
+
+
 
     public Task SetFailureAsync(string failureId, bool failed, CancellationToken cancellationToken) {
         return _apiClient.SetManualFailureAsync(failureId, failed, cancellationToken);
@@ -89,4 +81,5 @@ public class FenixFailureService : IFenixFailureService {
         _lastHealthCheckResult = isAvailable;
         _lastHealthCheckAtUtc = DateTimeOffset.UtcNow;
     }
+
 }

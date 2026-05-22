@@ -183,7 +183,7 @@
             <Setter Property="Foreground" Value="{StaticResource BrTextSecondary}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BrBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Padding" Value="5"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -263,11 +263,11 @@
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Content="─" Width="32" Height="32" Click="MinimizeWindow"
-                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="14"/>
+                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="20"/>
                         <Button Content="□" Width="32" Height="32" Click="MaximizeWindow"
-                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="12"/>
+                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="20"/>
                         <Button Content="✕" Width="32" Height="32" Click="CloseWindow"
-                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="12"/>
+                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="20"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -295,7 +295,7 @@
                             </Ellipse.Fill>
                         </Ellipse>
                         <StackPanel>
-                            <TextBlock Text="MSFS 2024" FontSize="10" FontWeight="Bold"
+                            <TextBlock Text="MSFS 2020/2024" FontSize="10" FontWeight="Bold"
                                        Foreground="{StaticResource BrTextSecondary}"/>
                             <TextBlock Text="{Binding SimConnectStatus}" FontSize="11"
                                        Foreground="{Binding SimConnectStatusBrush}"/>
@@ -313,7 +313,7 @@
                             </Ellipse.Fill>
                         </Ellipse>
                         <StackPanel>
-                            <TextBlock Text="FENIX A320" FontSize="10" FontWeight="Bold"
+                            <TextBlock Text="Fenix System" FontSize="10" FontWeight="Bold"
                                        Foreground="{StaticResource BrTextSecondary}"/>
                             <TextBlock Text="{Binding FenixStatus}" FontSize="11"
                                        Foreground="{Binding FenixStatusBrush}"/>
@@ -334,7 +334,7 @@
                     <Button Grid.Column="4" Content="↻  Refresh"
                             Command="{Binding RefreshCommand}"
                             Style="{StaticResource GhostButtonStyle}"
-                            FontSize="11"/>
+                            FontSize="12"/>
                 </Grid>
             </Border>
 
@@ -351,6 +351,27 @@
                                Text="MODOS" FontSize="10" FontWeight="Bold"
                                Foreground="{StaticResource BrTextSecondary}" Margin="0,0,0,12"/>
                     <StackPanel DockPanel.Dock="Top">
+                        <RadioButton Style="{StaticResource ModeCardStyle}"
+                             IsChecked="{Binding IsRealisticModeSelected}"
+                             GroupName="AppMode">       
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                    Background="#2A1C1C" VerticalAlignment="Center">
+                                    <TextBlock Text="🛩️" FontSize="16"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Realista" FontSize="13" FontWeight="SemiBold"
+                                    Foreground="{StaticResource BrTextPrimary}"/>
+                                    <TextBlock Text="Basado en historial de vuelos" FontSize="11"
+                                    Foreground="{StaticResource BrTextSecondary}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </RadioButton>
 
                         <RadioButton Style="{StaticResource ModeCardStyle}"
                                      IsChecked="{Binding IsTrainingModeSelected}"
@@ -391,28 +412,6 @@
                                     <TextBlock Text="Personalizado" FontSize="13" FontWeight="SemiBold"
                                                Foreground="{StaticResource BrTextPrimary}"/>
                                     <TextBlock Text="Control manual de fallas" FontSize="11"
-                                               Foreground="{StaticResource BrTextSecondary}" Margin="0,2,0,0"/>
-                                </StackPanel>
-                            </Grid>
-                        </RadioButton>
-
-                        <RadioButton Style="{StaticResource ModeCardStyle}"
-                                     IsChecked="{Binding IsRealisticModeSelected}"
-                                     GroupName="AppMode">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="36"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
-                                        Background="#2A1C1C" VerticalAlignment="Center">
-                                    <TextBlock Text="🛩️" FontSize="16"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-                                    <TextBlock Text="Realista" FontSize="13" FontWeight="SemiBold"
-                                               Foreground="{StaticResource BrTextPrimary}"/>
-                                    <TextBlock Text="Basado en historial de vuelos" FontSize="11"
                                                Foreground="{StaticResource BrTextSecondary}" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Grid>
@@ -554,7 +553,7 @@
                                                        Foreground="{StaticResource BrTextPrimary}" Margin="4,0,0,0"/>
                                         </StackPanel>
                                         <Slider Style="{StaticResource DarkSliderStyle}"
-                                                Minimum="5" Maximum="300" TickFrequency="5"
+                                                Minimum="60" Maximum="600" TickFrequency="30"
                                                 Value="{Binding CheckIntervalSeconds, UpdateSourceTrigger=PropertyChanged}"/>
                                     </StackPanel>
                                 </Grid>
