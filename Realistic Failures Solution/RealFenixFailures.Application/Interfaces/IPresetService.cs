@@ -3,7 +3,11 @@ using RealFenixFailures.Application.DTOs;
 namespace RealFenixFailures.Application.Interfaces;
 
 public interface IPresetService {
-    Task CreateEmptyCustomPresetAsync(CancellationToken none);
-    Task DeletePresetAsync(int id, CancellationToken none);
-    Task<IReadOnlyList<PresetDto>> GetPresetsAsync(CancellationToken cancellationToken);
+
+    Task InitializeAsync(CancellationToken ct);
+    Task DeletePresetAsync(int id, CancellationToken ct);
+    Task<IReadOnlyList<PresetDto>> GetTrainingPresetsAsync(CancellationToken ct);
+    Task<IReadOnlyList<PresetDto>> GetRealisticPresetsAsync(CancellationToken ct);
+    Task<IReadOnlyList<PresetDto>> GetCustomPresetsAsync(CancellationToken ct);
+    Task<PresetDto?> GetByIdAsync(int presetId, CancellationToken cancellationToken);
 }

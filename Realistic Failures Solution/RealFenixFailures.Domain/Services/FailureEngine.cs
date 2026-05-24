@@ -13,8 +13,8 @@ public class FailureEngine : IFailureEngine {
         _random = Random.Shared;
     }
 
-    public TriggeredFailure? TryTriggerFailure(FailurePreset preset, FlightPhase currentPhase, double globalProbability, DateTimeOffset timestampUtc) {
-        if (preset.FailureDefinitions.Count == 0) {
+    public TriggeredFailure? TryTriggerFailure(FailurePreset preset, FlightPhaseEnum currentPhase, double globalProbability, DateTimeOffset timestampUtc) {
+        if (preset.PresetFailureDefinitions.Count == 0) {
             return null;
         }
 
@@ -22,7 +22,7 @@ public class FailureEngine : IFailureEngine {
             return null;
         }
 
-        var eligible = _ruleEvaluator.EvaluateEligibleFailures(preset.FailureDefinitions, currentPhase);
+        var eligible = _ruleEvaluator.EvaluateEligibleFailures(preset.PresetFailureDefinitions.Select(x => x.FenixFailure), currentPhase);
         if (eligible.Count == 0) {
             return null;
         }
@@ -46,7 +46,7 @@ public class FailureEngine : IFailureEngine {
             cumulative += 1;
             if (roll <= cumulative) {
                 return new TriggeredFailure {
-                    FailureDefinitionId = candidate.Id,
+                    FenixFailureId = candidate.FenixFailureId,
                     PresetId = preset.Id,
                     TriggeredAtUtc = timestampUtc,
                     FlightPhase = currentPhase

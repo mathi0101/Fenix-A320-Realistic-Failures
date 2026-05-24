@@ -17,7 +17,7 @@ public static class DependencyInjection {
         services.AddScoped<IFailureEngineSettings, FailureEngineSettingsProvider>();
 
         services.AddScoped<IFenixFailureDefinitionRepository, FenixFailureDefinitionRepository>();
-        services.AddScoped<IFailurePresetRepository, FailurePresetRepository>();
+        services.AddScoped<IPresetRepository, PresetRepository>();
         services.AddScoped<IFlightSessionRepository, FlightSessionRepository>();
         services.AddScoped<ITriggeredFailureRepository, TriggeredFailureRepository>();
 

@@ -10,7 +10,7 @@ using System.Windows.Threading;
 namespace RealFenixFailures.UI.ViewModels;
 
 public class DebugViewModel : ObservableObject {
-    private readonly IFailureOrchestrator _orchestrator;
+    private readonly IEngineOrchestrator _orchestrator;
     private readonly IPresetService _presetService;
     private readonly IFailureEngineSettings _settings;
     private readonly ILogger<DebugViewModel> _logger;
@@ -18,14 +18,14 @@ public class DebugViewModel : ObservableObject {
 
     private string _simConnectStatus = "Disconnected";
     private string _fenixStatus = "Disconnected";
-    private FlightPhase _currentFlightPhase = FlightPhase.Unknown;
+    private FlightPhaseEnum _currentFlightPhase = FlightPhaseEnum.Unknown;
     private PresetDto? _selectedPreset;
     private bool _isEngineActive;
     private double _globalProbability;
     private int _checkIntervalSeconds;
 
     public DebugViewModel(
-        IFailureOrchestrator orchestrator,
+        IEngineOrchestrator orchestrator,
         IPresetService presetService,
         IFailureEngineSettings settings,
         ILogger<DebugViewModel> logger) {
@@ -67,7 +67,7 @@ public class DebugViewModel : ObservableObject {
         set => SetProperty(ref _fenixStatus, value);
     }
 
-    public FlightPhase CurrentFlightPhase {
+    public FlightPhaseEnum CurrentFlightPhase {
         get => _currentFlightPhase;
         set => SetProperty(ref _currentFlightPhase, value);
     }
@@ -103,7 +103,7 @@ public class DebugViewModel : ObservableObject {
     }
 
     private async Task RefreshAsync() {
-        var presets = await _presetService.GetPresetsAsync(CancellationToken.None);
+        var presets = await _presetService.GetTrainingPresetsAsync(CancellationToken.None);
         Presets.Clear();
         foreach (var preset in presets) {
             Presets.Add(preset);

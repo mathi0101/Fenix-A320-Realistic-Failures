@@ -14,18 +14,16 @@ namespace RealFenixFailures.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "FailurePresets",
+                name: "FailurePresetTypes",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 120, nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 600, nullable: false),
-                    PresetType = table.Column<int>(type: "INTEGER", nullable: false)
+                    Description = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_FailurePresets", x => x.Id);
+                    table.PrimaryKey("PK_FailurePresetTypes", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -43,21 +41,26 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "FlightSessions",
+                name: "FailurePresets",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    StartedAtUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    PresetId = table.Column<int>(type: "INTEGER", nullable: false)
+                    Name = table.Column<string>(type: "TEXT", maxLength: 120, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 600, nullable: false),
+                    TriggerDescription = table.Column<string>(type: "TEXT", maxLength: 600, nullable: false),
+                    PresetType = table.Column<int>(type: "INTEGER", nullable: false),
+                    PresetType1 = table.Column<int>(type: "INTEGER", nullable: false),
+                    FlightPhase = table.Column<int>(type: "INTEGER", nullable: false),
+                    Difficulty = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_FlightSessions", x => x.Id);
+                    table.PrimaryKey("PK_FailurePresets", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_FlightSessions_FailurePresets_PresetId",
-                        column: x => x.PresetId,
-                        principalTable: "FailurePresets",
+                        name: "FK_FailurePresets_FailurePresetTypes_PresetType",
+                        column: x => x.PresetType,
+                        principalTable: "FailurePresetTypes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -83,11 +86,29 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "FenixFailureDefinitions",
+                name: "FlightSessions",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
+                    StartedAtUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    PresetId = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FlightSessions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FlightSessions_FailurePresets_PresetId",
+                        column: x => x.PresetId,
+                        principalTable: "FailurePresets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FenixFailureDefinitions",
+                columns: table => new
+                {
                     FenixFailureId = table.Column<string>(type: "TEXT", maxLength: 180, nullable: false),
                     Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     GroupId = table.Column<int>(type: "INTEGER", nullable: false),
@@ -95,7 +116,7 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_FenixFailureDefinitions", x => x.Id);
+                    table.PrimaryKey("PK_FenixFailureDefinitions", x => x.FenixFailureId);
                     table.ForeignKey(
                         name: "FK_FenixFailureDefinitions_FenixFailureGroups_GroupId",
                         column: x => x.GroupId,
@@ -105,27 +126,35 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "PresetFailureDefinition",
+                name: "PresetFailureDefinitions",
                 columns: table => new
                 {
-                    FailureDefinitionId = table.Column<int>(type: "INTEGER", nullable: false),
-                    FailurePresetId = table.Column<int>(type: "INTEGER", nullable: false)
+                    PresetId = table.Column<int>(type: "INTEGER", nullable: false),
+                    FenixFailureId = table.Column<string>(type: "TEXT", maxLength: 180, nullable: false),
+                    ProbabilityGroup = table.Column<int>(type: "INTEGER", nullable: true),
+                    Probability = table.Column<double>(type: "REAL", nullable: false),
+                    Ias = table.Column<string>(type: "TEXT", maxLength: 10, nullable: true),
+                    Above_Altitude = table.Column<string>(type: "TEXT", maxLength: 10, nullable: true),
+                    Below_Altitude = table.Column<string>(type: "TEXT", maxLength: 10, nullable: true),
+                    Time = table.Column<string>(type: "TEXT", maxLength: 10, nullable: true),
+                    AfterEvent = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    AfterEventSeconds = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_PresetFailureDefinition", x => new { x.FailureDefinitionId, x.FailurePresetId });
+                    table.PrimaryKey("PK_PresetFailureDefinitions", x => new { x.PresetId, x.FenixFailureId });
                     table.ForeignKey(
-                        name: "FK_PresetFailureDefinition_FailurePresets_FailurePresetId",
-                        column: x => x.FailurePresetId,
+                        name: "FK_PresetFailureDefinitions_FailurePresets_PresetId",
+                        column: x => x.PresetId,
                         principalTable: "FailurePresets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_PresetFailureDefinition_FenixFailureDefinitions_FailureDefinitionId",
-                        column: x => x.FailureDefinitionId,
+                        name: "FK_PresetFailureDefinitions_FenixFailureDefinitions_FenixFailureId",
+                        column: x => x.FenixFailureId,
                         principalTable: "FenixFailureDefinitions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "FenixFailureId",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -135,7 +164,7 @@ namespace RealFenixFailures.Infrastructure.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     FlightSessionId = table.Column<int>(type: "INTEGER", nullable: false),
-                    FailureDefinitionId = table.Column<int>(type: "INTEGER", nullable: false),
+                    FenixFailureId = table.Column<string>(type: "TEXT", nullable: false),
                     PresetId = table.Column<int>(type: "INTEGER", nullable: true),
                     TriggeredAtUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
                     FlightPhase = table.Column<int>(type: "INTEGER", nullable: false)
@@ -150,10 +179,10 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_TriggeredFailures_FenixFailureDefinitions_FailureDefinitionId",
-                        column: x => x.FailureDefinitionId,
+                        name: "FK_TriggeredFailures_FenixFailureDefinitions_FenixFailureId",
+                        column: x => x.FenixFailureId,
                         principalTable: "FenixFailureDefinitions",
-                        principalColumn: "Id",
+                        principalColumn: "FenixFailureId",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_TriggeredFailures_FlightSessions_FlightSessionId",
@@ -164,23 +193,20 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 });
 
             migrationBuilder.InsertData(
-                table: "FailurePresets",
-                columns: new[] { "Id", "Description", "Name", "PresetType" },
+                table: "FailurePresetTypes",
+                columns: new[] { "Id", "Description" },
                 values: new object[,]
                 {
-                    { 1, "Fallas menores iniciales para forzar checklist real.", "Cold & Dark Immersion", 1 },
-                    { 2, "Fallas aleatorias menores durante el vuelo.", "Random Non-Critical", 2 },
-                    { 3, "Fallas aleatorias con posibilidad de fallas críticas.", "Random with Critical", 3 },
-                    { 4, "Fallas críticas por fase para entrenamiento.", "Training Mode", 4 },
-                    { 5, "Distribución cercana a operación real A320.", "Realistic Mode", 5 },
-                    { 6, "Preset vacío para reglas del usuario.", "Custom", 6 }
+                    { 1, "RealisticMode" },
+                    { 2, "TrainingMode" },
+                    { 3, "Custom" },
+                    { 4, "UserPreset" }
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_FenixFailureDefinitions_FenixFailureId",
-                table: "FenixFailureDefinitions",
-                column: "FenixFailureId",
-                unique: true);
+                name: "IX_FailurePresets_PresetType",
+                table: "FailurePresets",
+                column: "PresetType");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FenixFailureDefinitions_GroupId",
@@ -198,14 +224,14 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 column: "PresetId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PresetFailureDefinition_FailurePresetId",
-                table: "PresetFailureDefinition",
-                column: "FailurePresetId");
+                name: "IX_PresetFailureDefinitions_FenixFailureId",
+                table: "PresetFailureDefinitions",
+                column: "FenixFailureId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TriggeredFailures_FailureDefinitionId",
+                name: "IX_TriggeredFailures_FenixFailureId",
                 table: "TriggeredFailures",
-                column: "FailureDefinitionId");
+                column: "FenixFailureId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TriggeredFailures_FlightSessionId",
@@ -222,7 +248,7 @@ namespace RealFenixFailures.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "PresetFailureDefinition");
+                name: "PresetFailureDefinitions");
 
             migrationBuilder.DropTable(
                 name: "TriggeredFailures");
@@ -241,6 +267,9 @@ namespace RealFenixFailures.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "FenixFailureSystems");
+
+            migrationBuilder.DropTable(
+                name: "FailurePresetTypes");
         }
     }
 }

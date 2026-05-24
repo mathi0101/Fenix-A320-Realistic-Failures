@@ -7,20 +7,31 @@ public class RealFenixDbContext : DbContext {
     public RealFenixDbContext(DbContextOptions<RealFenixDbContext> options) : base(options) {
     }
 
+    public DbSet<PresetType> FailurePresetTypes => Set<PresetType>();
     public DbSet<FenixFailureDefinition> FenixFailureDefinitions => Set<FenixFailureDefinition>();
     public DbSet<FenixFailureGroup> FenixFailureGroups => Set<FenixFailureGroup>();
     public DbSet<FenixFailureSystem> FenixFailureSystems => Set<FenixFailureSystem>();
     public DbSet<FailurePreset> FailurePresets => Set<FailurePreset>();
+    public DbSet<PresetFailureDefinition> PresetFailureDefinitions => Set<PresetFailureDefinition>();
     public DbSet<FlightSession> FlightSessions => Set<FlightSession>();
     public DbSet<TriggeredFailure> TriggeredFailures => Set<TriggeredFailure>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
+
+        #region EnumsTables
+
+        modelBuilder.Entity<PresetType>(entity => {
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Description).HasMaxLength(200).IsRequired();
+        });
+
+        #endregion
+
         #region Fenix Failures
 
         modelBuilder.Entity<FenixFailureDefinition>(entity => {
-            entity.HasKey(x => x.Id);
+            entity.HasKey(x => x.FenixFailureId);
             entity.Property(x => x.FenixFailureId).HasMaxLength(180).IsRequired();
-            entity.HasIndex(x => x.FenixFailureId).IsUnique();
             entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
             entity.HasOne(x => x.Group)
                   .WithMany(g => g.FailureDefinitions)
@@ -46,11 +57,47 @@ public class RealFenixDbContext : DbContext {
         });
 
         #endregion
+
+        #region Presets
+
         modelBuilder.Entity<FailurePreset>(entity => {
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Name).HasMaxLength(120).IsRequired();
-            entity.Property(x => x.Description).HasMaxLength(600);
+            entity.Property(x => x.Description).HasMaxLength(600).IsRequired();
+            entity.Property(x => x.TriggerDescription).HasMaxLength(600).IsRequired();
+            entity.Property(x => x.PresetTypeId)
+                  .HasColumnName("PresetType")
+                  .IsRequired();
+            entity.HasOne<PresetType>()
+                  .WithMany()
+                  .HasForeignKey(x => x.PresetTypeId)
+                  .OnDelete(DeleteBehavior.Restrict)
+                  .IsRequired();
+            entity.HasMany(x => x.PresetFailureDefinitions)
+                  .WithOne(pf => pf.Preset)
+                  .HasForeignKey(pf => pf.PresetId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<PresetFailureDefinition>(entity => {
+            entity.HasKey(p => new { p.PresetId, p.FenixFailureId });
+            entity.Property(x => x.FenixFailureId).HasMaxLength(180).IsRequired();
+            entity.HasIndex(x => x.FenixFailureId);
+            entity.Property(x => x.ProbabilityGroup);
+            entity.Property(x => x.Probability).IsRequired();
+            entity.Property(x => x.Ias).HasMaxLength(10);
+            entity.Property(x => x.Above_Altitude).HasMaxLength(10);
+            entity.Property(x => x.Below_Altitude).HasMaxLength(10);
+            entity.Property(x => x.Time).HasMaxLength(10);
+            entity.Property(x => x.AfterEvent).HasMaxLength(50);
+            entity.Property(x => x.AfterEventSeconds).HasMaxLength(50);
+            entity.HasOne(x => x.FenixFailure)
+                  .WithMany(x => x.PresetFailureDefinitions)
+                  .HasForeignKey(x => x.FenixFailureId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        #endregion
 
         modelBuilder.Entity<FlightSession>(entity => {
             entity.HasKey(x => x.Id);
@@ -60,17 +107,9 @@ public class RealFenixDbContext : DbContext {
         modelBuilder.Entity<TriggeredFailure>(entity => {
             entity.HasKey(x => x.Id);
             entity.HasOne(x => x.FlightSession).WithMany(x => x.TriggeredFailures).HasForeignKey(x => x.FlightSessionId).OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(x => x.FailureDefinition).WithMany().HasForeignKey(x => x.FailureDefinitionId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.FenixFailure).WithMany().HasForeignKey(x => x.FenixFailureId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Preset).WithMany().HasForeignKey(x => x.PresetId).OnDelete(DeleteBehavior.Restrict);
         });
-
-        modelBuilder.Entity<FailurePreset>()
-            .HasMany(x => x.FailureDefinitions)
-            .WithMany(x => x.Presets)
-            .UsingEntity<Dictionary<string, object>>(
-                "PresetFailureDefinition",
-                r => r.HasOne<FenixFailureDefinition>().WithMany().HasForeignKey("FailureDefinitionId"),
-                l => l.HasOne<FailurePreset>().WithMany().HasForeignKey("FailurePresetId"));
 
         SeedData.Apply(modelBuilder);
     }

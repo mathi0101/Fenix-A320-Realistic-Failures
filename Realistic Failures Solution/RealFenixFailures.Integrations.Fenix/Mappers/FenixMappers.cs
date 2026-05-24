@@ -1,4 +1,4 @@
-﻿using RealFenixFailures.Application.DTOs;
+﻿using RealFenixFailures.Domain.DTOs;
 using RealFenixFailures.Integrations.Fenix.Models;
 
 namespace RealFenixFailures.Integrations.Fenix.Mappers;

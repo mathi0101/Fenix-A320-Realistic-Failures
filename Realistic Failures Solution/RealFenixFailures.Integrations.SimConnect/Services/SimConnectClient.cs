@@ -13,6 +13,6 @@ public class SimConnectClient : ISimConnectClient
 
     public Task<SimAircraftState> GetAircraftStateAsync(CancellationToken cancellationToken)
     {
-        return Task.FromResult(new SimAircraftState(false, FlightPhase.Unknown));
+        return Task.FromResult(new SimAircraftState(false, FlightPhaseEnum.Unknown));
     }
 }

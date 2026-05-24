@@ -1,4 +1,4 @@
-﻿namespace RealFenixFailures.Application.DTOs;
+﻿namespace RealFenixFailures.Domain.DTOs;
 
 public sealed record FenixSystemGroupDto(
     string Name,

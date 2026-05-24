@@ -15,7 +15,7 @@ public class SimConnectFlightDataProvider : IFlightDataProvider {
         return _client.IsConnectedAsync(cancellationToken);
     }
 
-    public async Task<FlightPhase> GetCurrentFlightPhaseAsync(CancellationToken cancellationToken) {
+    public async Task<FlightPhaseEnum> GetCurrentFlightPhaseAsync(CancellationToken cancellationToken) {
         var state = await _client.GetAircraftStateAsync(cancellationToken);
         return state.FlightPhase;
     }

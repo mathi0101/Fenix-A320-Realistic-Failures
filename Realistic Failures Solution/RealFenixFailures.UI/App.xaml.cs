@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Infrastructure.Persistence;
 using RealFenixFailures.UI.DependencyInjection;
 
@@ -25,6 +26,9 @@ public partial class App : System.Windows.Application {
         using var scope = _host.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<RealFenixDbContext>();
         await dbContext.Database.MigrateAsync();
+
+        var initializer = scope.ServiceProvider.GetRequiredService<IInitializerService>();
+        await initializer.InitializeAsync(CancellationToken.None);
 
         //var window = _host.Services.GetRequiredService<DebugWindow>();
         //window.Show();

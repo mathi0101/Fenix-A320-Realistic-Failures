@@ -1,20 +1,20 @@
-﻿using RealFenixFailures.Application.Interfaces;
-using RealFenixFailures.Domain.Entities;
+﻿using RealFenixFailures.Domain.Entities;
 using RealFenixFailures.Domain.Enums;
+using RealFenixFailures.Domain.Interfaces;
 using RealFenixFailures.Domain.Interfaces.Repositories;
 
-namespace RealFenixFailures.Application.Services;
+namespace RealFenixFailures.Domain.Services;
 
-public class FailurePersistenceService : IFailurePersistenceService {
+public class FailuresPersistenceService : IFailuresPersistenceService {
     private readonly IFenixFailureDefinitionRepository _fenixFailuresRepository;
     private readonly IFenixJsonFailuresReaderService _fenixFailuresReader;
 
-    public FailurePersistenceService(IFenixFailureDefinitionRepository fenixFailureDefinitionRepository, IFenixJsonFailuresReaderService fenixJsonReaderService) {
+    public FailuresPersistenceService(IFenixFailureDefinitionRepository fenixFailureDefinitionRepository, IFenixJsonFailuresReaderService fenixJsonReaderService) {
         _fenixFailuresRepository = fenixFailureDefinitionRepository;
         _fenixFailuresReader = fenixJsonReaderService;
     }
 
-    public async Task InitializeAsync(CancellationToken ct) {
+    public async Task LoadInitialFailuresAsync(CancellationToken ct) {
         var hasData = await _fenixFailuresRepository.HasAnyData(ct);
         if (hasData) return;
         var failures = await _fenixFailuresReader.ReadAsync(ct);

@@ -6,11 +6,11 @@ namespace RealFenixFailures.Application;
 
 public static class DependencyInjection {
     public static IServiceCollection AddApplication(this IServiceCollection services) {
-        services.AddScoped<IFailurePersistenceService, FailurePersistenceService>();
-        services.AddScoped<ITrainingPresetService, TrainingPresetService>();
         services.AddScoped<IPresetService, PresetService>();
+        services.AddScoped<IInitializerService, InitializerService>();
         services.AddScoped<ISessionService, SessionService>();
-        services.AddScoped<IFailureOrchestrator, FailureOrchestrator>();
+        services.AddScoped<IEngineOrchestrator, EngineOrchestrator>();
+        services.AddScoped<IInitializerService, InitializerService>();
         return services;
     }
 }

@@ -1,6 +1,6 @@
 namespace RealFenixFailures.Domain.Enums;
 
-public enum FlightPhase {
+public enum FlightPhaseEnum {
     Unknown = 0,
     ColdAndDark = 1,
     Taxi = 2,

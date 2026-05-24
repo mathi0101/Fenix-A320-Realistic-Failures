@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.Application.Interfaces;
+using RealFenixFailures.Domain.DTOs;
 using RealFenixFailures.Integrations.Fenix.Interfaces;
 using RealFenixFailures.Integrations.Fenix.Mappers;
 using RealFenixFailures.Integrations.Fenix.Models;

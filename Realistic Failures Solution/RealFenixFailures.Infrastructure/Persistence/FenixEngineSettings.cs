@@ -7,5 +7,5 @@ public class FenixEngineSettings {
 
     public double GlobalProbability { get; set; } = 0.05;
     public int CheckIntervalSeconds { get; set; } = 10;
-    public FlightPhase ForcedFlightPhaseForStub { get; set; } = FlightPhase.Cruise;
+    public FlightPhaseEnum ForcedFlightPhaseForStub { get; set; } = FlightPhaseEnum.Cruise;
 }

@@ -5,6 +5,6 @@ namespace RealFenixFailures.Application.DTOs;
 public sealed record FailureTriggerLogDto(
     DateTimeOffset TriggeredAtUtc,
     string FailureName,
-    FlightPhase FlightPhase,
+    FlightPhaseEnum FlightPhase,
     string PresetName
 );

@@ -1,4 +1,4 @@
-using RealFenixFailures.Application.DTOs;
+using RealFenixFailures.Domain.DTOs;
 
 namespace RealFenixFailures.Application.Interfaces;
 

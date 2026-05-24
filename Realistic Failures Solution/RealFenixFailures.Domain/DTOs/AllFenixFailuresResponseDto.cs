@@ -1,4 +1,4 @@
-﻿namespace RealFenixFailures.Application.DTOs;
+﻿namespace RealFenixFailures.Domain.DTOs;
 
 public sealed class AllFenixFailuresResponseDto {
     public IReadOnlyList<FenixMajorSystemGroupDto> MajorGroups { get; set; } = new List<FenixMajorSystemGroupDto>();

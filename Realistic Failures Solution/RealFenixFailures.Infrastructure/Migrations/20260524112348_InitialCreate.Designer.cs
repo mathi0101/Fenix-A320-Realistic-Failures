@@ -11,7 +11,7 @@ using RealFenixFailures.Infrastructure.Persistence;
 namespace RealFenixFailures.Infrastructure.Migrations
 {
     [DbContext(typeof(RealFenixDbContext))]
-    [Migration("20260522094635_InitialCreate")]
+    [Migration("20260524112348_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -19,21 +19,6 @@ namespace RealFenixFailures.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
-
-            modelBuilder.Entity("PresetFailureDefinition", b =>
-                {
-                    b.Property<int>("FailureDefinitionId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("FailurePresetId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("FailureDefinitionId", "FailurePresetId");
-
-                    b.HasIndex("FailurePresetId");
-
-                    b.ToTable("PresetFailureDefinition");
-                });
 
             modelBuilder.Entity("RealFenixFailures.Domain.Entities.FailurePreset", b =>
                 {
@@ -46,6 +31,12 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .HasMaxLength(600)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Difficulty")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FlightPhase")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -54,63 +45,29 @@ namespace RealFenixFailures.Infrastructure.Migrations
                     b.Property<int>("PresetType")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("PresetTypeId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("PresetType");
+
+                    b.Property<string>("TriggerDescription")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.ToTable("FailurePresets");
+                    b.HasIndex("PresetTypeId");
 
-                    b.HasData(
-                        new
+                    b.ToTable("FailurePresets", t =>
                         {
-                            Id = 1,
-                            Description = "Fallas menores iniciales para forzar checklist real.",
-                            Name = "Cold & Dark Immersion",
-                            PresetType = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Description = "Fallas aleatorias menores durante el vuelo.",
-                            Name = "Random Non-Critical",
-                            PresetType = 2
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Description = "Fallas aleatorias con posibilidad de fallas críticas.",
-                            Name = "Random with Critical",
-                            PresetType = 3
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Description = "Fallas críticas por fase para entrenamiento.",
-                            Name = "Training Mode",
-                            PresetType = 4
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Description = "Distribución cercana a operación real A320.",
-                            Name = "Realistic Mode",
-                            PresetType = 5
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Description = "Preset vacío para reglas del usuario.",
-                            Name = "Custom",
-                            PresetType = 6
+                            t.Property("PresetType")
+                                .HasColumnName("PresetType1");
                         });
                 });
 
             modelBuilder.Entity("RealFenixFailures.Domain.Entities.FenixFailureDefinition", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("FenixFailureId")
-                        .IsRequired()
                         .HasMaxLength(180)
                         .HasColumnType("TEXT");
 
@@ -125,10 +82,7 @@ namespace RealFenixFailures.Infrastructure.Migrations
                     b.Property<int>("Severity")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("FenixFailureId")
-                        .IsUnique();
+                    b.HasKey("FenixFailureId");
 
                     b.HasIndex("GroupId");
 
@@ -196,14 +150,99 @@ namespace RealFenixFailures.Infrastructure.Migrations
                     b.ToTable("FlightSessions");
                 });
 
+            modelBuilder.Entity("RealFenixFailures.Domain.Entities.PresetFailureDefinition", b =>
+                {
+                    b.Property<int>("PresetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FenixFailureId")
+                        .HasMaxLength(180)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Above_Altitude")
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AfterEvent")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AfterEventSeconds")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Below_Altitude")
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Ias")
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Probability")
+                        .HasColumnType("REAL");
+
+                    b.Property<int?>("ProbabilityGroup")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Time")
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("PresetId", "FenixFailureId");
+
+                    b.HasIndex("FenixFailureId");
+
+                    b.ToTable("PresetFailureDefinitions");
+                });
+
+            modelBuilder.Entity("RealFenixFailures.Domain.Entities.PresetType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("FailurePresetTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "RealisticMode"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "TrainingMode"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Custom"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Description = "UserPreset"
+                        });
+                });
+
             modelBuilder.Entity("RealFenixFailures.Domain.Entities.TriggeredFailure", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("FailureDefinitionId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("FenixFailureId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("FlightPhase")
                         .HasColumnType("INTEGER");
@@ -219,7 +258,7 @@ namespace RealFenixFailures.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FailureDefinitionId");
+                    b.HasIndex("FenixFailureId");
 
                     b.HasIndex("FlightSessionId");
 
@@ -228,18 +267,12 @@ namespace RealFenixFailures.Infrastructure.Migrations
                     b.ToTable("TriggeredFailures");
                 });
 
-            modelBuilder.Entity("PresetFailureDefinition", b =>
+            modelBuilder.Entity("RealFenixFailures.Domain.Entities.FailurePreset", b =>
                 {
-                    b.HasOne("RealFenixFailures.Domain.Entities.FenixFailureDefinition", null)
+                    b.HasOne("RealFenixFailures.Domain.Entities.PresetType", null)
                         .WithMany()
-                        .HasForeignKey("FailureDefinitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("RealFenixFailures.Domain.Entities.FailurePreset", null)
-                        .WithMany()
-                        .HasForeignKey("FailurePresetId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("PresetTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -276,11 +309,30 @@ namespace RealFenixFailures.Infrastructure.Migrations
                     b.Navigation("Preset");
                 });
 
+            modelBuilder.Entity("RealFenixFailures.Domain.Entities.PresetFailureDefinition", b =>
+                {
+                    b.HasOne("RealFenixFailures.Domain.Entities.FenixFailureDefinition", "FenixFailure")
+                        .WithMany("PresetFailureDefinitions")
+                        .HasForeignKey("FenixFailureId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealFenixFailures.Domain.Entities.FailurePreset", "Preset")
+                        .WithMany("PresetFailureDefinitions")
+                        .HasForeignKey("PresetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FenixFailure");
+
+                    b.Navigation("Preset");
+                });
+
             modelBuilder.Entity("RealFenixFailures.Domain.Entities.TriggeredFailure", b =>
                 {
-                    b.HasOne("RealFenixFailures.Domain.Entities.FenixFailureDefinition", "FailureDefinition")
+                    b.HasOne("RealFenixFailures.Domain.Entities.FenixFailureDefinition", "FenixFailure")
                         .WithMany()
-                        .HasForeignKey("FailureDefinitionId")
+                        .HasForeignKey("FenixFailureId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -295,11 +347,21 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .HasForeignKey("PresetId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.Navigation("FailureDefinition");
+                    b.Navigation("FenixFailure");
 
                     b.Navigation("FlightSession");
 
                     b.Navigation("Preset");
+                });
+
+            modelBuilder.Entity("RealFenixFailures.Domain.Entities.FailurePreset", b =>
+                {
+                    b.Navigation("PresetFailureDefinitions");
+                });
+
+            modelBuilder.Entity("RealFenixFailures.Domain.Entities.FenixFailureDefinition", b =>
+                {
+                    b.Navigation("PresetFailureDefinitions");
                 });
 
             modelBuilder.Entity("RealFenixFailures.Domain.Entities.FenixFailureGroup", b =>

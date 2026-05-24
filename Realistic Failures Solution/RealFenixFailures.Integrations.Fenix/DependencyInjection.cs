@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RealFenixFailures.Application.Interfaces;
+using RealFenixFailures.Domain.Interfaces;
 using RealFenixFailures.Integrations.Fenix.Interfaces;
 using RealFenixFailures.Integrations.Fenix.Models;
 using RealFenixFailures.Integrations.Fenix.Services;

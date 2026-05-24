@@ -7,9 +7,15 @@ using RealFenixFailures.Domain.Interfaces.Repositories;
 
 namespace RealFenixFailures.Application.Services;
 
-public class FailureOrchestrator : IFailureOrchestrator {
+
+/// <summary>
+/// Este servicio controlará los 2 modos de fallas
+/// - Modo 1: Ejecucion de fallas aleatorias dentro del vuelo (Engine On/Off)
+/// - Modo 2: Modo manual de encendido y apagado de fallas segun usuario (Presets)
+/// </summary>
+public class EngineOrchestrator : IEngineOrchestrator {
     private readonly IFailureEngine _failureEngine;
-    private readonly IFailurePresetRepository _presetRepository;
+    private readonly IPresetService _presetService;
     private readonly ITriggeredFailureRepository _triggeredFailureRepository;
     private readonly ISessionService _sessionService;
     private readonly IFlightDataProvider _flightDataProvider;
@@ -18,20 +24,20 @@ public class FailureOrchestrator : IFailureOrchestrator {
     private readonly List<FailureTriggerLogDto> _recentLogs = new();
 
     private int? _activePresetId;
-    private FailurePreset? _activePreset;
+    private PresetDto? _activePreset;
     private FlightSession? _activeSession;
     public bool IsEngineActive { get; private set; }
 
-    public FailureOrchestrator(
+    public EngineOrchestrator(
         IFailureEngine failureEngine,
-        IFailurePresetRepository presetRepository,
+        IPresetService presetService,
         ITriggeredFailureRepository triggeredFailureRepository,
         ISessionService sessionService,
         IFlightDataProvider flightDataProvider,
         IFenixFailureDispatcher fenixDispatcher,
         IFailureEngineSettings settings) {
         _failureEngine = failureEngine;
-        _presetRepository = presetRepository;
+        _presetService = presetService;
         _triggeredFailureRepository = triggeredFailureRepository;
         _sessionService = sessionService;
         _flightDataProvider = flightDataProvider;
@@ -39,11 +45,15 @@ public class FailureOrchestrator : IFailureOrchestrator {
         _settings = settings;
     }
 
+    #region Presets Controller
+
     public async Task SetActivePresetAsync(int presetId, CancellationToken cancellationToken) {
         _activePresetId = presetId;
-        _activePreset = await _presetRepository.GetByIdAsync(presetId, cancellationToken);
+        _activePreset = await _presetService.GetByIdAsync(presetId, cancellationToken);
         _activeSession = null;
     }
+
+    #endregion
 
     public async Task ToggleEngineAsync(bool isActive, CancellationToken cancellationToken) {
         IsEngineActive = isActive;
@@ -51,7 +61,6 @@ public class FailureOrchestrator : IFailureOrchestrator {
         if (!isActive) {
             _activeSession = null;
             await _fenixDispatcher.ResetAllFailuresAsync(cancellationToken);
-            _recentLogs.Add(new FailureTriggerLogDto(DateTime.UtcNow, "FAILURES ENGINE OFF", FlightPhase.Unknown, _activePreset?.Name ?? ""));
             return;
         }
 
@@ -60,7 +69,6 @@ public class FailureOrchestrator : IFailureOrchestrator {
         }
 
         _activeSession = await _sessionService.StartSessionAsync(_activePresetId.Value, cancellationToken);
-        _recentLogs.Add(new FailureTriggerLogDto(DateTime.UtcNow, "FAILURES ENGINE ON", FlightPhase.Unknown, _activePreset!.Name));
     }
 
     public async Task<ConnectionStatusDto> GetConnectionStatusAsync(CancellationToken cancellationToken) {
@@ -68,7 +76,7 @@ public class FailureOrchestrator : IFailureOrchestrator {
         var fenixConnected = await _fenixDispatcher.IsConnectedAsync(cancellationToken);
         var phase = simConnected
             ? await _flightDataProvider.GetCurrentFlightPhaseAsync(cancellationToken)
-            : FlightPhase.Unknown;
+            : FlightPhaseEnum.Unknown;
 
         return new ConnectionStatusDto(simConnected, fenixConnected, phase);
     }
@@ -86,35 +94,33 @@ public class FailureOrchestrator : IFailureOrchestrator {
             return;
         }
 
-        _activePreset ??= await _presetRepository.GetByIdAsync(_activePresetId.Value, cancellationToken);
+        _activePreset ??= await _presetService.GetByIdAsync(_activePresetId.Value, cancellationToken);
         if (_activePreset is null) {
             return;
         }
 
-        var phase = await _flightDataProvider.GetCurrentFlightPhaseAsync(cancellationToken);
-        var trigger = _failureEngine.TryTriggerFailure(_activePreset, phase, _settings.GlobalProbability, DateTimeOffset.UtcNow);
-
-        if (trigger is null) {
-            return;
-        }
-
-        trigger.FlightSessionId = _activeSession.Id;
-
-        var failure = _activePreset.FailureDefinitions.FirstOrDefault(x => x.Id == trigger.FailureDefinitionId);
-        if (failure is null) {
-            return;
-        }
-
-        await _fenixDispatcher.TriggerFailureAsync(failure, cancellationToken);
-
-        await _triggeredFailureRepository.AddAsync(trigger, cancellationToken);
-        await _triggeredFailureRepository.SaveChangesAsync(cancellationToken);
-
-        _recentLogs.Add(new FailureTriggerLogDto(trigger.TriggeredAtUtc, failure.Name, phase, _activePreset.Name));
-    }
-
-    public Task StartTrainingScenarioAsync(int id, CancellationToken none) {
         throw new NotImplementedException();
+
+        //var phase = await _flightDataProvider.GetCurrentFlightPhaseAsync(cancellationToken);
+        //var trigger = _failureEngine.TryTriggerFailure(_activePreset, phase, _settings.GlobalProbability, DateTimeOffset.UtcNow);
+
+        //if (trigger is null) {
+        //    return;
+        //}
+
+        //trigger.FlightSessionId = _activeSession.Id;
+
+        //var failure = _activePreset.PresetFailureDefinitions.FirstOrDefault(x => x.FenixFailure!.Id == trigger.FailureDefinitionId)?.FenixFailure;
+        //if (failure is null) {
+        //    return;
+        //}
+
+        //await _fenixDispatcher.TriggerFailureAsync(failure, cancellationToken);
+
+        //await _triggeredFailureRepository.AddAsync(trigger, cancellationToken);
+        //await _triggeredFailureRepository.SaveChangesAsync(cancellationToken);
+
+        //_recentLogs.Add(new FailureTriggerLogDto(trigger.TriggeredAtUtc, failure.Name, phase, _activePreset.Name));
     }
 
 

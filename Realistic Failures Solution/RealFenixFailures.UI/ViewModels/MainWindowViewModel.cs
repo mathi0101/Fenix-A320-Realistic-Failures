@@ -3,7 +3,6 @@ using global::RealFenixFailures.Domain.Enums;
 using global::RealFenixFailures.UI.Commands;
 using global::RealFenixFailures.UI.ViewModels.Base;
 using Microsoft.Extensions.Logging;
-using RealFenixFailures.Application.Services;
 using RealFenixFailures.Domain.Interfaces;
 using RealFenixFailures.UI.ViewModels.Extra;
 using System.Collections.ObjectModel;
@@ -15,10 +14,9 @@ namespace RealFenixFailures.UI.ViewModels;
 // ─── MainViewModel ─────────────────────────────────────────────────────────────
 
 public class MainWindowViewModel : ObservableObject {
-    private readonly IFailureOrchestrator _orchestrator;
-    private readonly IFailurePersistenceService _failurePersistenceService;
+    private readonly IEngineOrchestrator _orchestrator;
     private readonly IPresetService _presetService;
-    private readonly ITrainingPresetService _trainingPresetService;
+    private readonly IPresetsLoader _trainingPresetService;
     private readonly IFlightHistoryService _flightHistoryService;   // NEW
     private readonly IFailureEngineSettings _settings;
     private readonly ILogger<MainWindowViewModel> _logger;
@@ -27,7 +25,7 @@ public class MainWindowViewModel : ObservableObject {
     // Connection state
     private string _simConnectStatus = "Disconnected";
     private string _fenixStatus = "Disconnected";
-    private FlightPhase _currentFlightPhase = FlightPhase.Unknown;
+    private FlightPhaseEnum _currentFlightPhase = FlightPhaseEnum.Unknown;
     private bool _isSimConnectConnected;
     private bool _isFenixConnected;
 
@@ -55,15 +53,13 @@ public class MainWindowViewModel : ObservableObject {
     private int _hydraulicsWearPercent;
 
     public MainWindowViewModel(
-        IFailureOrchestrator orchestrator,
-        IFailurePersistenceService failurePersistenceService,
+        IEngineOrchestrator orchestrator,
         IPresetService presetService,
-        ITrainingPresetService trainingPresetService,
+        IPresetsLoader trainingPresetService,
         IFlightHistoryService flightHistoryService,
         IFailureEngineSettings settings,
         ILogger<MainWindowViewModel> logger) {
         _orchestrator = orchestrator;
-        _failurePersistenceService = failurePersistenceService;
         _presetService = presetService;
         _trainingPresetService = trainingPresetService;
         _flightHistoryService = flightHistoryService;
@@ -122,7 +118,7 @@ public class MainWindowViewModel : ObservableObject {
         set => SetProperty(ref _fenixStatus, value);
     }
 
-    public FlightPhase CurrentFlightPhase {
+    public FlightPhaseEnum CurrentFlightPhase {
         get => _currentFlightPhase;
         set {
             if (SetProperty(ref _currentFlightPhase, value))
@@ -267,7 +263,6 @@ public class MainWindowViewModel : ObservableObject {
     #region Init
 
     public async Task InitializeAsync() {
-        await _failurePersistenceService.InitializeAsync(CancellationToken.None);
         await LoadTrainingScenarios();
         await RefreshAsync();
     }
@@ -292,7 +287,7 @@ public class MainWindowViewModel : ObservableObject {
                     Name = p.Name,
                     Description = p.Description,
                     TriggerDescription = p.TriggerDescription,
-                    Phase = p.Phase.ToString(),
+                    Phase = p.FlightPhase.ToString(),
                     Difficulty = p.Difficulty.ToString(),
                 });
         }
@@ -311,9 +306,7 @@ public class MainWindowViewModel : ObservableObject {
     private async Task StartTrainingScenarioAsync() {
         if (SelectedTrainingScenario is null) return;
 
-        // NEW method required in IFailureOrchestrator:
-        // Task StartTrainingScenarioAsync(Guid scenarioId, CancellationToken ct)
-        await _orchestrator.StartTrainingScenarioAsync(SelectedTrainingScenario.Id, CancellationToken.None);
+        await _orchestrator.SetActivePresetAsync(SelectedTrainingScenario.Id, CancellationToken.None);
         IsEngineActive = true;
         _logger.LogInformation("Training scenario started: {Name}", SelectedTrainingScenario.Name);
     }
@@ -359,13 +352,13 @@ public class MainWindowViewModel : ObservableObject {
 
     private async Task RefreshAsync() {
         // Load custom presets
-        var presets = await _presetService.GetPresetsAsync(CancellationToken.None);
+        var presets = await _presetService.GetCustomPresetsAsync(CancellationToken.None);
         CustomPresets.Clear();
-        foreach (var p in presets.Where(p => p.PresetType == PresetType.Custom)) {
+        foreach (var p in presets) {
             CustomPresets.Add(new CustomPresetViewModel {
                 Id = p.Id,
                 Name = p.Name,
-                FailureCount = p.FailureCount
+                FailureCount = p.Failures.Count
             });
         }
 

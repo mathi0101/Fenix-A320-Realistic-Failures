@@ -3,7 +3,6 @@ using RealFenixFailures.Domain.Enums;
 
 namespace RealFenixFailures.Domain.Interfaces;
 
-public interface IFailureRuleEvaluator
-{
-    IReadOnlyList<FenixFailureDefinition> EvaluateEligibleFailures(IEnumerable<FenixFailureDefinition> candidates, FlightPhase currentPhase);
+public interface IFailureRuleEvaluator {
+    IReadOnlyList<FenixFailureDefinition> EvaluateEligibleFailures(IEnumerable<FenixFailureDefinition> candidates, FlightPhaseEnum currentPhase);
 }
