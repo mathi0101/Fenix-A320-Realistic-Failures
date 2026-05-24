@@ -7,7 +7,6 @@ using RealFenixFailures.Domain.Interfaces;
 using RealFenixFailures.UI.ViewModels.Extra;
 using System.Collections.ObjectModel;
 using System.Windows.Media;
-using System.Windows.Threading;
 
 namespace RealFenixFailures.UI.ViewModels;
 
@@ -16,11 +15,8 @@ namespace RealFenixFailures.UI.ViewModels;
 public class MainWindowViewModel : ObservableObject {
     private readonly IEngineOrchestrator _orchestrator;
     private readonly IPresetService _presetService;
-    private readonly IPresetsLoader _trainingPresetService;
-    private readonly IFlightHistoryService _flightHistoryService;   // NEW
-    private readonly IFailureEngineSettings _settings;
+    private readonly IFlightHistoryService _flightHistoryService;
     private readonly ILogger<MainWindowViewModel> _logger;
-    private readonly DispatcherTimer _timer;
 
     // Connection state
     private string _simConnectStatus = "Disconnected";
@@ -41,8 +37,8 @@ public class MainWindowViewModel : ObservableObject {
     private TrainingScenarioViewModel? _selectedTrainingScenario;
 
     // Custom
-    private double _globalProbability;
-    private int _checkIntervalSeconds;
+    private double _globalProbability = 0.2;
+    private int _checkIntervalSeconds = 5;
 
     // Realistic stats
     private int _totalFlights;
@@ -55,19 +51,12 @@ public class MainWindowViewModel : ObservableObject {
     public MainWindowViewModel(
         IEngineOrchestrator orchestrator,
         IPresetService presetService,
-        IPresetsLoader trainingPresetService,
         IFlightHistoryService flightHistoryService,
-        IFailureEngineSettings settings,
         ILogger<MainWindowViewModel> logger) {
         _orchestrator = orchestrator;
         _presetService = presetService;
-        _trainingPresetService = trainingPresetService;
         _flightHistoryService = flightHistoryService;
-        _settings = settings;
         _logger = logger;
-
-        _globalProbability = settings.GlobalProbability;
-        _checkIntervalSeconds = settings.CheckIntervalSeconds;
 
         TrainingScenarios = new ObservableCollection<TrainingScenarioViewModel>();
         CustomPresets = new ObservableCollection<CustomPresetViewModel>();
@@ -82,10 +71,6 @@ public class MainWindowViewModel : ObservableObject {
         CreateCustomPresetCommand = new RelayCommand(() => _ = CreateCustomPresetAsync());
         ActivateCustomPresetCommand = new RelayCommand<CustomPresetViewModel>(p => _ = ActivateCustomPresetAsync(p));
         DeleteCustomPresetCommand = new RelayCommand<CustomPresetViewModel>(p => _ = DeleteCustomPresetAsync(p));
-
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(_checkIntervalSeconds) };
-        _timer.Tick += async (_, _) => await PollAsync();
-        _timer.Start();
     }
 
     // ── Collections ──────────────────────────────────────────────────────────
@@ -278,7 +263,7 @@ public class MainWindowViewModel : ObservableObject {
         // These are hardcoded UI scenarios; the actual preset IDs are resolved
         // by the orchestrator when a scenario is started.
         TrainingScenarios.Clear();
-        var presets = await _trainingPresetService.GetTrainingPresetsAsync(CancellationToken.None);
+        var presets = await _presetService.GetTrainingPresetsAsync(CancellationToken.None);
         if (presets.Count == 0) return;
         foreach (var p in presets) {
             TrainingScenarios.Add(
@@ -307,7 +292,7 @@ public class MainWindowViewModel : ObservableObject {
         if (SelectedTrainingScenario is null) return;
 
         await _orchestrator.SetActivePresetAsync(SelectedTrainingScenario.Id, CancellationToken.None);
-        IsEngineActive = true;
+        await ToggleEngineAsync();
         _logger.LogInformation("Training scenario started: {Name}", SelectedTrainingScenario.Name);
     }
 
@@ -319,9 +304,8 @@ public class MainWindowViewModel : ObservableObject {
     }
 
     private void ApplySettings() {
-        _settings.GlobalProbability = Math.Clamp(GlobalProbability, 0, 1);
-        _settings.CheckIntervalSeconds = Math.Max(5, CheckIntervalSeconds);
-        _timer.Interval = TimeSpan.FromSeconds(_settings.CheckIntervalSeconds);
+        GlobalProbability = Math.Clamp(GlobalProbability, 0, 1);
+        CheckIntervalSeconds = Math.Max(5, CheckIntervalSeconds);
     }
 
     private async Task CreateCustomPresetAsync() {
@@ -358,7 +342,7 @@ public class MainWindowViewModel : ObservableObject {
             CustomPresets.Add(new CustomPresetViewModel {
                 Id = p.Id,
                 Name = p.Name,
-                FailureCount = p.Failures.Count
+                FailureCount = p.PresetFailureDefinitions.Count
             });
         }
 

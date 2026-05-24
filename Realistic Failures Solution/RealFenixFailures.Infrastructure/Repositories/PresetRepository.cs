@@ -31,6 +31,7 @@ public class PresetRepository : IPresetRepository {
     public async Task<FailurePreset?> GetByIdAsync(int id, CancellationToken ct) {
         return await _dbContext.FailurePresets
             .Include(x => x.PresetFailureDefinitions)
+            .ThenInclude(x => x.FenixFailure)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
     }
 }

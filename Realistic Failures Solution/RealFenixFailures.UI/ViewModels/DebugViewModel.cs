@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
-using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.Application.Interfaces;
+using RealFenixFailures.Domain.Entities;
 using RealFenixFailures.Domain.Enums;
 using RealFenixFailures.UI.Commands;
 using RealFenixFailures.UI.ViewModels.Base;
@@ -19,7 +19,7 @@ public class DebugViewModel : ObservableObject {
     private string _simConnectStatus = "Disconnected";
     private string _fenixStatus = "Disconnected";
     private FlightPhaseEnum _currentFlightPhase = FlightPhaseEnum.Unknown;
-    private PresetDto? _selectedPreset;
+    private FailurePreset? _selectedPreset;
     private bool _isEngineActive;
     private double _globalProbability;
     private int _checkIntervalSeconds;
@@ -37,7 +37,7 @@ public class DebugViewModel : ObservableObject {
         _globalProbability = settings.GlobalProbability;
         _checkIntervalSeconds = settings.CheckIntervalSeconds;
 
-        Presets = new ObservableCollection<PresetDto>();
+        Presets = new ObservableCollection<FailurePreset>();
         LogEntries = new ObservableCollection<string>();
 
         RefreshCommand = new RelayCommand(() => _ = RefreshAsync());
@@ -50,7 +50,7 @@ public class DebugViewModel : ObservableObject {
         _timer.Start();
     }
 
-    public ObservableCollection<PresetDto> Presets { get; }
+    public ObservableCollection<FailurePreset> Presets { get; }
     public ObservableCollection<string> LogEntries { get; }
 
     public RelayCommand RefreshCommand { get; }
@@ -72,7 +72,7 @@ public class DebugViewModel : ObservableObject {
         set => SetProperty(ref _currentFlightPhase, value);
     }
 
-    public PresetDto? SelectedPreset {
+    public FailurePreset? SelectedPreset {
         get => _selectedPreset;
         set => SetProperty(ref _selectedPreset, value);
     }

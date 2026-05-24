@@ -7,6 +7,6 @@ public interface IEngineOrchestrator {
     Task SetActivePresetAsync(int presetId, CancellationToken cancellationToken);
     Task ToggleEngineAsync(bool isActive, CancellationToken cancellationToken);
     Task<ConnectionStatusDto> GetConnectionStatusAsync(CancellationToken cancellationToken);
-    Task<IReadOnlyList<FailureTriggerLogDto>> GetRecentFailuresAsync(CancellationToken cancellationToken);
+    Task<List<FailureTriggerLogDto>> GetRecentFailuresAsync(CancellationToken cancellationToken);
     Task PollAndTriggerAsync(CancellationToken cancellationToken);
 }

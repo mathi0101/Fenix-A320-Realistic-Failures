@@ -3,6 +3,7 @@ using RealFenixFailures.Domain.Enums;
 
 namespace RealFenixFailures.Domain.Interfaces;
 
-public interface IFailureEngine {
+public interface IFailureTrigger {
+    IReadOnlyList<PresetFailureDefinition> GetTriggeredPresetFailures(FailurePreset preset);
     TriggeredFailure? TryTriggerFailure(FailurePreset preset, FlightPhaseEnum currentPhase, double globalProbability, DateTimeOffset timestampUtc);
 }

@@ -2,5 +2,6 @@ namespace RealFenixFailures.Integrations.Fenix.Models;
 
 public sealed record FenixSaveManualRequest(
     string Id,
-    bool Failed
+    bool Failed,
+    FenixFailureConditionRequest? FailureCondition
 );

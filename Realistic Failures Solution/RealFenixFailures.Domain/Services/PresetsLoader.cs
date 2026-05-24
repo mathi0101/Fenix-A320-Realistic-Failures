@@ -1,6 +1,7 @@
 ﻿using RealFenixFailures.Domain.DTOs;
 using RealFenixFailures.Domain.Entities;
 using RealFenixFailures.Domain.Enums;
+using RealFenixFailures.Domain.Helpers;
 using RealFenixFailures.Domain.Interfaces;
 
 namespace RealFenixFailures.Domain.Services;
@@ -41,15 +42,52 @@ public class PresetsLoader : IPresetsLoader {
                     {
                         FenixFailureId = FenixFailures.Power_plant.Engine_failure.Eng_1_failure,
                         ProbabilityGroup = 1,
-                        Probability = 1,
-                        Ias = Helpers.Intervalos.AbiertoEntre(80, 130),
+                        Probability = 0.5,
+                        Ias = FenixHelper.Intervalos.AbiertoEntre(70, 130),
                     },
                     new PresetFailureDefinition
                     {
                         FenixFailureId = FenixFailures.Power_plant.Engine_failure.Eng_2_failure,
                         ProbabilityGroup = 1,
-                        Probability = 1,
-                        Ias = Helpers.Intervalos.AbiertoEntre(80, 130),
+                        Probability = 0.5,
+                        Ias = FenixHelper.Intervalos.AbiertoEntre(70, 130),
+                    },
+                    new PresetFailureDefinition
+                    {
+                        FenixFailureId = FenixFailures.Landing_gear.Wheel_brake_fault.Wheel_brake_fault_1,
+                        Probability = 0.4,
+                        Ias = FenixHelper.Intervalos.AbiertoEntre(20, 70),
+                    },
+                    new PresetFailureDefinition
+                    {
+                        FenixFailureId = FenixFailures.Landing_gear.Wheel_brake_fault.Wheel_brake_fault_2,
+                        Probability = 0.4,
+                        Ias = FenixHelper.Intervalos.AbiertoEntre(20, 70),
+                    },new PresetFailureDefinition
+                    {
+                        FenixFailureId = FenixFailures.Landing_gear.Wheel_brake_fault.Wheel_brake_fault_3,
+                        Probability = 0.4,
+                        Ias = FenixHelper.Intervalos.AbiertoEntre(20, 70),
+                    },
+                    new PresetFailureDefinition
+                    {
+                        FenixFailureId = FenixFailures.Landing_gear.Wheel_brake_fault.Wheel_brake_fault_4,
+                        Probability = 0.4,
+                        Ias = FenixHelper.Intervalos.AbiertoEntre(20, 70),
+                    },
+                    new PresetFailureDefinition
+                    {
+                        FenixFailureId = FenixFailures.Landing_gear.Tyre_pressure.Tyre_pressure_main_1_low,
+                        ProbabilityGroup=3,
+                        Probability = 0.5,
+                        Ias = FenixHelper.Intervalos.AbiertoEntre(20, 70),
+                    },
+                    new PresetFailureDefinition
+                    {
+                        FenixFailureId = FenixFailures.Landing_gear.Tyre_pressure.Tyre_pressure_main_2_low,
+                        ProbabilityGroup=3,
+                        Probability = 0.5,
+                        Ias = FenixHelper.Intervalos.AbiertoEntre(20, 70),
                     }
                 }
             ),
@@ -66,17 +104,17 @@ public class PresetsLoader : IPresetsLoader {
                     {
                         FenixFailureId = FenixFailures.Power_plant.Engine_failure.Eng_1_failure,
                         ProbabilityGroup = 1,
-                        Probability = 1,
+                        Probability = 0.5,
                         AfterEvent=FenixEvents.V1,
-                        AfterEventSeconds = Helpers.Intervalos.AbiertoEntre(1, 5),
+                        AfterEventSeconds = FenixHelper.Intervalos.AbiertoEntre(1, 3),
                     },
                     new PresetFailureDefinition
                     {
                         FenixFailureId = FenixFailures.Power_plant.Engine_failure.Eng_2_failure,
                         ProbabilityGroup = 1,
-                        Probability = 1,
+                        Probability = 0.5,
                         AfterEvent=FenixEvents.V1,
-                        AfterEventSeconds = Helpers.Intervalos.AbiertoEntre(1, 5),
+                        AfterEventSeconds = FenixHelper.Intervalos.AbiertoEntre(1, 3),
                     }
                 }
             ),
@@ -91,16 +129,16 @@ public class PresetsLoader : IPresetsLoader {
                     new() {
                         FenixFailureId = FenixFailures.Power_plant.Engine_failure.Eng_1_failure,
                         ProbabilityGroup = 1,
-                        Probability = 1,
-                        AfterEvent=FenixEvents.V2,
-                        AfterEventSeconds = Helpers.Intervalos.AbiertoEntre(1, 15),
+                        Probability = 0.5,
+                        AfterEvent=FenixEvents.TakeOff,
+                        AfterEventSeconds = FenixHelper.Intervalos.AbiertoEntre(1, 15),
                     },
                     new() {
                         FenixFailureId = FenixFailures.Power_plant.Engine_failure.Eng_2_failure,
                         ProbabilityGroup = 1,
-                        Probability = 1,
-                        AfterEvent=FenixEvents.V2,
-                        AfterEventSeconds = Helpers.Intervalos.AbiertoEntre(1, 15),
+                        Probability = 0.5,
+                        AfterEvent=FenixEvents.TakeOff,
+                        AfterEventSeconds = FenixHelper.Intervalos.AbiertoEntre(1, 15),
                     }
                 ]
             ),

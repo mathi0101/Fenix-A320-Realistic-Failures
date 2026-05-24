@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Domain.DTOs;
 using RealFenixFailures.Integrations.Fenix.Interfaces;
 using RealFenixFailures.Integrations.Fenix.Mappers;
@@ -24,6 +23,19 @@ public class FenixApiFailureService : IFenixApiFailureService {
     }
 
 
+    #region Minimal
+
+    public async Task SetFailureAsync(string fenixId, bool failed, CancellationToken ct) {
+        await _apiClient.SetManualFailureAsync(new FenixSaveManualRequest(fenixId, failed, null), ct);
+    }
+
+    public async Task ArmFailureAsync(FenixSaveManualRequest def, CancellationToken ct) {
+        FenixSaveManualRequest rq = new(def.Id, false, def.FailureCondition);
+        await _apiClient.SetManualFailureAsync(rq, ct);
+    }
+
+    #endregion
+
     public async Task<AllFenixFailuresResponseDto> GetAllFailuresAsync(CancellationToken cancellationToken) {
         var response = await _apiClient.GetManualFailuresAsync(cancellationToken);
         if (response is null) {
@@ -35,11 +47,6 @@ public class FenixApiFailureService : IFenixApiFailureService {
         return FenixMappers.FenixJsonFailuresToDto(response);
     }
 
-
-
-    public Task SetFailureAsync(string failureId, bool failed, CancellationToken cancellationToken) {
-        return _apiClient.SetManualFailureAsync(failureId, failed, cancellationToken);
-    }
 
     public async Task ResetAllFailuresAsync(CancellationToken cancellationToken) {
         var failures = await GetAllFailuresAsync(cancellationToken);
@@ -68,8 +75,8 @@ public class FenixApiFailureService : IFenixApiFailureService {
             if (now - _lastHealthCheckAtUtc < TimeSpan.FromSeconds(intervalSeconds)) {
                 return _lastHealthCheckResult;
             }
-
-            var response = await _apiClient.GetManualFailuresAsync(cancellationToken);
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_optionsMonitor.CurrentValue.HealthCheckTimeout));
+            var response = await _apiClient.GetManualFailuresAsync(cts.Token);
             UpdateHealthState(response is not null);
             return _lastHealthCheckResult;
         } finally {
@@ -81,5 +88,6 @@ public class FenixApiFailureService : IFenixApiFailureService {
         _lastHealthCheckResult = isAvailable;
         _lastHealthCheckAtUtc = DateTimeOffset.UtcNow;
     }
+
 
 }

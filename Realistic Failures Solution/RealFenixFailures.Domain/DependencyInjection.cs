@@ -9,7 +9,7 @@ public static class DependencyInjection {
         services.AddScoped<IFailuresPersistenceService, FailuresPersistenceService>();
         services.AddScoped<IPresetsLoader, PresetsLoader>();
         services.AddScoped<IFailureRuleEvaluator, FailureRuleEvaluator>();
-        services.AddScoped<IFailureEngine, FailureEngine>();
+        services.AddScoped<IFailureTrigger, FailureTrigger>();
         services.AddScoped<IFlightHistoryService, FlightHistoryService>();
         return services;
     }

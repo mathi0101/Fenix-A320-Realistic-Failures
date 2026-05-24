@@ -1,6 +1,5 @@
-using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.Application.Interfaces;
-using RealFenixFailures.Application.Mappers;
+using RealFenixFailures.Domain.Entities;
 using RealFenixFailures.Domain.Enums;
 using RealFenixFailures.Domain.Interfaces;
 using RealFenixFailures.Domain.Interfaces.Repositories;
@@ -28,29 +27,23 @@ public class PresetService : IPresetService {
         throw new NotImplementedException();
     }
 
-    public async Task<IReadOnlyList<PresetDto>> GetTrainingPresetsAsync(CancellationToken ct) {
+    public async Task<IReadOnlyList<FailurePreset>> GetTrainingPresetsAsync(CancellationToken ct) {
         var presets = await _presetRepository.GetAllAsync(PresetTypeEnum.TrainingMode, ct);
-        return presets
-            .Select(p => p.ToDto())
-            .ToList();
+        return presets;
     }
 
-    public async Task<IReadOnlyList<PresetDto>> GetRealisticPresetsAsync(CancellationToken ct) {
+    public async Task<IReadOnlyList<FailurePreset>> GetRealisticPresetsAsync(CancellationToken ct) {
         var presets = await _presetRepository.GetAllAsync(PresetTypeEnum.RealisticMode, ct);
-        return presets
-            .Select(p => p.ToDto())
-            .ToList();
+        return presets;
     }
 
-    public async Task<IReadOnlyList<PresetDto>> GetCustomPresetsAsync(CancellationToken ct) {
+    public async Task<IReadOnlyList<FailurePreset>> GetCustomPresetsAsync(CancellationToken ct) {
         var presets = await _presetRepository.GetAllAsync(PresetTypeEnum.Custom, ct);
-        return presets
-            .Select(p => p.ToDto())
-            .ToList();
+        return presets;
     }
 
-    public async Task<PresetDto?> GetByIdAsync(int presetId, CancellationToken ct) {
+    public async Task<FailurePreset?> GetByIdAsync(int presetId, CancellationToken ct) {
         var preset = await _presetRepository.GetByIdAsync(presetId, ct);
-        return preset?.ToDto();
+        return preset;
     }
 }

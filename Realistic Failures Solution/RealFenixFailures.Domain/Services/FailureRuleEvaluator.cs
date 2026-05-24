@@ -5,11 +5,18 @@ using RealFenixFailures.Domain.Interfaces;
 namespace RealFenixFailures.Domain.Services;
 
 public class FailureRuleEvaluator : IFailureRuleEvaluator {
-    public IReadOnlyList<FenixFailureDefinition> EvaluateEligibleFailures(IEnumerable<FenixFailureDefinition> candidates, FlightPhaseEnum currentPhase) {
-        //return candidates
-        //    .Where(f => f.ApplicableFlightPhase == FlightPhase.Unknown || f.ApplicableFlightPhase == currentPhase || true)
-        //    .ToList();
+    private readonly Random _random;
 
-        return candidates.ToList();
+    public FailureRuleEvaluator() {
+        _random = Random.Shared;
+    }
+
+    public IReadOnlyList<PresetFailureDefinition> EvaluateEligibleFailures(IEnumerable<PresetFailureDefinition> candidates, FlightPhaseEnum currentPhase) {
+        throw new NotImplementedException();
+    }
+
+    public IReadOnlyList<PresetFailureDefinition> EvaluateEligibleFailures(FailurePreset preset) {
+        throw new NotImplementedException();
+
     }
 }
