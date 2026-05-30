@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using RealFenixFailures.Domain.Entities;
 using RealFenixFailures.Domain.Enums;
 using RealFenixFailures.Domain.Interfaces.Repositories;
@@ -8,14 +9,22 @@ namespace RealFenixFailures.Infrastructure.Repositories;
 
 public class PresetRepository : IPresetRepository {
     private readonly RealFenixDbContext _dbContext;
+    private readonly ILogger<PresetRepository> _logger;
 
-    public PresetRepository(RealFenixDbContext dbContext) {
+    public PresetRepository(ILogger<PresetRepository> logger, RealFenixDbContext dbContext) {
+        _logger = logger;
         _dbContext = dbContext;
     }
 
     public async Task AddAsync(IReadOnlyList<FailurePreset> presets, CancellationToken ct) {
-        await _dbContext.AddRangeAsync(presets, ct);
-        await _dbContext.SaveChangesAsync(ct);
+        try {
+            await _dbContext.AddRangeAsync(presets, ct);
+            await _dbContext.SaveChangesAsync(ct);
+        } catch (DbUpdateException ex) {
+            _logger.LogError(ex, "Error guardando cambios: {Message}", ex.Message);
+            _logger.LogError("Inner: {Inner}", ex.InnerException?.Message);
+        }
+
     }
 
     public async Task<IReadOnlyList<FailurePreset>> GetAllAsync(PresetTypeEnum presetType, CancellationToken ct) {

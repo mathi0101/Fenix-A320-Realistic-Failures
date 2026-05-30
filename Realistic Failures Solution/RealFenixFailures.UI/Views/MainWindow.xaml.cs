@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Input;
 
-namespace RealFenixFailures.UI;
+namespace RealFenixFailures.UI.Views;
 
 public partial class MainWindow : Window {
     private readonly MainWindowViewModel _viewModel;

@@ -9,17 +9,17 @@ using RealFenixFailures.Integrations.Fenix.Models;
 namespace RealFenixFailures.Integrations.Fenix.Services;
 
 public class FenixFailureDispatcher : IFenixFailureDispatcher {
+    private readonly ILogger<FenixFailureDispatcher> _logger;
     private readonly IFenixApiFailureService _failureService;
     private readonly IFailureTrigger _failureTrigger;
     private readonly ITriggeredFailureRepository _triggeredFailureRepository;
-    private readonly ILogger<FenixFailureDispatcher> _logger;
 
 
-    public FenixFailureDispatcher(IFenixApiFailureService failureService, IFailureTrigger failureTrigger, ITriggeredFailureRepository triggeredFailureRepository, ILogger<FenixFailureDispatcher> logger) {
+    public FenixFailureDispatcher(ILogger<FenixFailureDispatcher> logger, IFenixApiFailureService failureService, IFailureTrigger failureTrigger, ITriggeredFailureRepository triggeredFailureRepository) {
+        _logger = logger;
         _failureService = failureService;
         _failureTrigger = failureTrigger;
         _triggeredFailureRepository = triggeredFailureRepository;
-        _logger = logger;
     }
 
     public Task<bool> IsConnectedAsync(CancellationToken ct) {
@@ -46,9 +46,9 @@ public class FenixFailureDispatcher : IFenixFailureDispatcher {
                     TriggeredAtUtc = DateTimeOffset.UtcNow
                 }, ct);
 
-                _logger.LogInformation("Applied scenario failure: {FailureName}", def.FenixFailure.Name);
+                _logger.LogInformation("Applied scenario failure: {FailureName}", def.FenixFailure!.Name);
             } catch (Exception ex) {
-                _logger.LogError(ex, "Failed to apply scenario failure: {FailureName}", def.FenixFailure.Name);
+                _logger.LogError(ex, "Failed to apply scenario failure: {FailureName}", def.FenixFailure!.Name);
                 await ResetAllFailuresAsync(ct);
                 break;
             }

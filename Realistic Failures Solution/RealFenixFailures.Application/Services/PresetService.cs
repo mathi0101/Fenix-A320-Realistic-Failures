@@ -46,4 +46,8 @@ public class PresetService : IPresetService {
         var preset = await _presetRepository.GetByIdAsync(presetId, ct);
         return preset;
     }
+
+    public Task<FailurePreset> CreateEmptyCustomPresetAsync(CancellationToken none) {
+        throw new NotImplementedException();
+    }
 }

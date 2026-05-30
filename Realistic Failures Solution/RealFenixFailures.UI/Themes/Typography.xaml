@@ -1,0 +1,23 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Font Families -->
+    <FontFamily x:Key="FontFamily.Default">Segoe UI</FontFamily>
+    <FontFamily x:Key="FontFamily.Monospace">Consolas</FontFamily>
+
+    <!-- Font Sizes -->
+    <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="FontSize.XXS">9</sys:Double>
+    <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="FontSize.XS">10</sys:Double>
+    <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="FontSize.SM">11</sys:Double>
+    <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="FontSize.MD">12</sys:Double>
+    <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="FontSize.LG">13</sys:Double>
+    <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="FontSize.XL">14</sys:Double>
+    <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="FontSize.XXL">16</sys:Double>
+    <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="FontSize.XXXL">22</sys:Double>
+
+    <!-- Font Weights -->
+    <FontWeight x:Key="FontWeight.Normal">Normal</FontWeight>
+    <FontWeight x:Key="FontWeight.SemiBold">SemiBold</FontWeight>
+    <FontWeight x:Key="FontWeight.Bold">Bold</FontWeight>
+
+</ResourceDictionary>

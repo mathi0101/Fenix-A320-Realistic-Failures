@@ -1,8 +1,8 @@
 ﻿namespace RealFenixFailures.Domain.Enums;
 
 public enum DifficultyEnum {
-    Easy = 0,
-    Medium = 1,
-    Hard = 2,
-    Insane = 3,
+    Easy = 1,
+    Medium = 2,
+    Hard = 3,
+    Insane = 4,
 }

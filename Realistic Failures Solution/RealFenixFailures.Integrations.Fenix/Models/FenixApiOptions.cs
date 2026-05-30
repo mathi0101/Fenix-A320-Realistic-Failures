@@ -9,5 +9,4 @@ public class FenixApiOptions {
     public string SaveManualPath { get; set; } = "/fenix/failures/saveManual";
     public int HealthCheckIntervalSeconds { get; set; } = 10;
     public int HealthCheckTimeout { get; set; } = 2;
-    public string FailuresJson { get; set; } = "failures.json";
 }

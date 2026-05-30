@@ -24,6 +24,20 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controls\" />
+    <Folder Include="Converters\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\Panels\RealisticModePanel.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Panels\CustomModePanel.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>

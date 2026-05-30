@@ -11,7 +11,7 @@ namespace RealFenixFailures.Integrations.Fenix;
 public static class DependencyInjection {
     public static IServiceCollection AddFenixIntegration(this IServiceCollection services, IConfiguration configuration) {
         services.Configure<FenixApiOptions>(configuration.GetSection(FenixApiOptions.SectionName));
-        services.AddSingleton<IFenixJsonFailuresReaderService, FenixJsonFailuresReaderService>();
+        services.AddSingleton<IFenixStreamFailuresReaderService, FenixStreamFailuresReaderService>();
         services.AddHttpClient<IFenixApiClient, FenixApiClient>();
         services.AddSingleton<IFenixApiFailureService, FenixApiFailureService>();
         services.AddSingleton<IFenixFailureDispatcher, FenixFailureDispatcher>();

@@ -9,5 +9,6 @@ public interface IPresetService {
     Task<IReadOnlyList<FailurePreset>> GetTrainingPresetsAsync(CancellationToken ct);
     Task<IReadOnlyList<FailurePreset>> GetRealisticPresetsAsync(CancellationToken ct);
     Task<IReadOnlyList<FailurePreset>> GetCustomPresetsAsync(CancellationToken ct);
-    Task<FailurePreset?> GetByIdAsync(int presetId, CancellationToken cancellationToken);
+    Task<FailurePreset?> GetByIdAsync(int presetId, CancellationToken ct);
+    Task<FailurePreset> CreateEmptyCustomPresetAsync(CancellationToken ct);
 }

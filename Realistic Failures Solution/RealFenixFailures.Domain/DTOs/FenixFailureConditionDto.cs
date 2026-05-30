@@ -1,11 +1,11 @@
 ﻿namespace RealFenixFailures.Domain.DTOs;
 
 public sealed record FenixFailureConditionDto(
-    int Id,
-    int Ias,
-    int Alt,
-    int Altb,
-    int Time,
+    int? Id,
+    int? Ias,
+    int? Alt,
+    int? Altb,
+    int? Time,
     string? AfterEvent,
     int? AfterEventSeconds
 );

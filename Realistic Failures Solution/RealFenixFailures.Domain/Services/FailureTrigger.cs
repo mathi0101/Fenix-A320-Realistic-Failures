@@ -8,9 +8,9 @@ public class FailureTrigger : IFailureTrigger {
     private readonly IFailureRuleEvaluator _ruleEvaluator;
     private readonly Random _random;
 
-    public FailureTrigger(IFailureRuleEvaluator ruleEvaluator) {
+    public FailureTrigger(IFailureRuleEvaluator ruleEvaluator, Random? random = null) {
         _ruleEvaluator = ruleEvaluator;
-        _random = Random.Shared;
+        _random = random ?? Random.Shared;
     }
 
     public TriggeredFailure? TryTriggerFailure(FailurePreset preset, FlightPhaseEnum currentPhase, double globalProbability, DateTimeOffset timestampUtc) {
@@ -32,7 +32,7 @@ public class FailureTrigger : IFailureTrigger {
         var cumulative = 0.0;
 
         foreach (var candidate in eligible) {
-            cumulative += 1 + candidate.Probability;
+            cumulative += candidate.Probability;
             if (roll <= cumulative) {
                 return new TriggeredFailure {
                     FenixFailureId = candidate.FenixFailureId,
@@ -54,8 +54,11 @@ public class FailureTrigger : IFailureTrigger {
 
         foreach (var group in sameFailureGroups) {
             var candidates = group.ToArray();
+            _random.Shuffle(candidates);               // Hacemos Shuffle a los candidatos para evitar ventaja de eleccion debido a orden de ejecución
+
             var totalWeight = candidates.Sum(x => x.Probability);
-            var roll = _random.NextDouble() * totalWeight;
+            if (!ProbabilidadEsExitosa(totalWeight, out double roll))    //Chequeamos si hay probabilidad de que no se active nada en el grupo
+                continue;
             var cumulative = 0.0;
 
             foreach (var candidate in candidates) {
@@ -68,12 +71,17 @@ public class FailureTrigger : IFailureTrigger {
         }
 
         foreach (var candidate in independantFailures) {
-            var roll = _random.NextDouble();
-            if (roll <= candidate.Probability) {
+            if (ProbabilidadEsExitosa(candidate.Probability, out double roll))
                 triggeredFailures.Add(candidate);
-            }
         }
 
         return triggeredFailures;
+    }
+
+    private bool ProbabilidadEsExitosa(double probability, out double roll) {
+        roll = _random.NextDouble();
+        if (probability <= 0.0) return false;
+        if (probability >= 1.0) return true;
+        return roll <= probability;
     }
 }

@@ -6,11 +6,11 @@ using RealFenixFailures.Domain.Interfaces;
 
 namespace RealFenixFailures.Domain.Services;
 
-public class PresetsLoader : IPresetsLoader {
+public class TestPresetsLoader : IPresetsLoader {
     private readonly List<FailurePreset> _trainingPresets;
 
-    public PresetsLoader() {
-        _trainingPresets = GetTrainingPresets()
+    public TestPresetsLoader() {
+        _trainingPresets = LoadTrainingPresets()
             .Select(p => new FailurePreset {
                 Name = p.Name,
                 Description = p.Description,
@@ -23,11 +23,11 @@ public class PresetsLoader : IPresetsLoader {
             .ToList();
     }
 
-    public Task<IReadOnlyList<FailurePreset>> GetTrainingPresetsAsync(CancellationToken cancellationToken) {
-        return Task.FromResult<IReadOnlyList<FailurePreset>>(_trainingPresets);
+    public async Task<IReadOnlyList<FailurePreset>> GetTrainingPresetsAsync(CancellationToken ct) {
+        return await Task.FromResult<IReadOnlyList<FailurePreset>>(_trainingPresets);
     }
     #region Training
-    private IReadOnlyCollection<PreloadedPresetDto> GetTrainingPresets() {
+    private IReadOnlyCollection<PreloadedPresetDto> LoadTrainingPresets() {
         return new List<PreloadedPresetDto>
         {
             new PreloadedPresetDto(

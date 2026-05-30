@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Infrastructure.Persistence;
 using RealFenixFailures.UI.DependencyInjection;
+using RealFenixFailures.UI.Views;
 
 namespace RealFenixFailures.UI;
 
@@ -30,8 +31,6 @@ public partial class App : System.Windows.Application {
         var initializer = scope.ServiceProvider.GetRequiredService<IInitializerService>();
         await initializer.InitializeAsync(CancellationToken.None);
 
-        //var window = _host.Services.GetRequiredService<DebugWindow>();
-        //window.Show();
         var newWindow = _host.Services.GetRequiredService<MainWindow>();
         newWindow.Show();
 

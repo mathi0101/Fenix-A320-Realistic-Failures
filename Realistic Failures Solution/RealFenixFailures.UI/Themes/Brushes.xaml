@@ -1,0 +1,44 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="DesignTokens.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+    <!-- Background Brushes -->
+    <SolidColorBrush x:Key="Brush.Background.Deep" Color="{StaticResource Color.Background.Deep}"/>
+    <SolidColorBrush x:Key="Brush.Background.Card" Color="{StaticResource Color.Background.Card}"/>
+    <SolidColorBrush x:Key="Brush.Background.Card.Hover" Color="{StaticResource Color.Background.Card.Hover}"/>
+    <SolidColorBrush x:Key="Brush.Background.TitleBar" Color="{StaticResource Color.Background.TitleBar}"/>
+    <SolidColorBrush x:Key="Brush.Background.StatusBar" Color="{StaticResource Color.Background.StatusBar}"/>
+    <SolidColorBrush x:Key="Brush.Background.LogArea" Color="{StaticResource Color.Background.LogArea}"/>
+    <SolidColorBrush x:Key="Brush.Background.Scenario.Selected" Color="{StaticResource Color.Background.Scenario.Selected}"/>
+    <SolidColorBrush x:Key="Brush.Background.Scenario.Default" Color="{StaticResource Color.Background.Scenario.Default}"/>
+    <SolidColorBrush x:Key="Brush.Background.Warning" Color="{StaticResource Color.Background.Warning}"/>
+
+    <!-- Accent Brushes -->
+    <SolidColorBrush x:Key="Brush.Accent.Blue.Primary" Color="{StaticResource Color.Accent.Blue.Primary}"/>
+    <SolidColorBrush x:Key="Brush.Accent.Blue.Dark" Color="{StaticResource Color.Accent.Blue.Dark}"/>
+    <SolidColorBrush x:Key="Brush.Accent.Blue.Darker" Color="{StaticResource Color.Accent.Blue.Darker}"/>
+    <SolidColorBrush x:Key="Brush.Accent.Green.Primary" Color="{StaticResource Color.Accent.Green.Primary}"/>
+    <SolidColorBrush x:Key="Brush.Accent.Green.Dark" Color="{StaticResource Color.Accent.Green.Dark}"/>
+    <SolidColorBrush x:Key="Brush.Accent.Amber.Primary" Color="{StaticResource Color.Accent.Amber.Primary}"/>
+    <SolidColorBrush x:Key="Brush.Accent.Red.Primary" Color="{StaticResource Color.Accent.Red.Primary}"/>
+    <SolidColorBrush x:Key="Brush.Accent.Red.Dark" Color="{StaticResource Color.Accent.Red.Dark}"/>
+
+    <!-- Text Brushes -->
+    <SolidColorBrush x:Key="Brush.Text.Primary" Color="{StaticResource Color.Text.Primary}"/>
+    <SolidColorBrush x:Key="Brush.Text.Secondary" Color="{StaticResource Color.Text.Secondary}"/>
+    <SolidColorBrush x:Key="Brush.Text.Disabled" Color="{StaticResource Color.Text.Disabled}"/>
+
+    <!-- Border Brushes -->
+    <SolidColorBrush x:Key="Brush.Border.Default" Color="{StaticResource Color.Border.Default}"/>
+    <SolidColorBrush x:Key="Brush.Border.Warning" Color="{StaticResource Color.Border.Warning}"/>
+
+    <!-- Gradient Brushes -->
+    <LinearGradientBrush x:Key="Brush.Background.Card.Selected" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#1A2540" Offset="0"/>
+        <GradientStop Color="#13161E" Offset="1"/>
+    </LinearGradientBrush>
+
+</ResourceDictionary>

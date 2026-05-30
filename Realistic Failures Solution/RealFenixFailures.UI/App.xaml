@@ -2,5 +2,22 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Cimientos -->
+                <ResourceDictionary Source="Themes/DesignTokens.xaml"/>
+                <ResourceDictionary Source="Themes/Brushes.xaml"/>
+                <ResourceDictionary Source="Themes/Typography.xaml"/>
+                <!-- Componentes -->
+                <ResourceDictionary Source="Themes/ProgressBarStyles.xaml"/>
+                <ResourceDictionary Source="Themes/ButtonStyles.xaml"/>
+                <ResourceDictionary Source="Themes/SelectorStyles.xaml"/>
+                <ResourceDictionary Source="Themes/MiscStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Converters -->
+            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+            
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

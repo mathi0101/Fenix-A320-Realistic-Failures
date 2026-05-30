@@ -1,15 +1,20 @@
-﻿using RealFenixFailures.Domain.Entities;
+﻿using Microsoft.Extensions.Options;
+using RealFenixFailures.Domain.Entities;
 using RealFenixFailures.Domain.Enums;
 using RealFenixFailures.Domain.Interfaces;
 using RealFenixFailures.Domain.Interfaces.Repositories;
+using RealFenixFailures.Domain.Services;
+using RealFenixFailures.Infrastructure.Configuration;
 
-namespace RealFenixFailures.Domain.Services;
+namespace RealFenixFailures.Infrastructure.Services;
 
 public class FailuresPersistenceService : IFailuresPersistenceService {
+    private readonly FailureEngineSettings _settings;
     private readonly IFenixFailureDefinitionRepository _fenixFailuresRepository;
-    private readonly IFenixJsonFailuresReaderService _fenixFailuresReader;
+    private readonly IFenixStreamFailuresReaderService _fenixFailuresReader;
 
-    public FailuresPersistenceService(IFenixFailureDefinitionRepository fenixFailureDefinitionRepository, IFenixJsonFailuresReaderService fenixJsonReaderService) {
+    public FailuresPersistenceService(IOptions<FailureEngineSettings> settings, IFenixFailureDefinitionRepository fenixFailureDefinitionRepository, IFenixStreamFailuresReaderService fenixJsonReaderService) {
+        _settings = settings.Value;
         _fenixFailuresRepository = fenixFailureDefinitionRepository;
         _fenixFailuresReader = fenixJsonReaderService;
     }
@@ -17,7 +22,9 @@ public class FailuresPersistenceService : IFailuresPersistenceService {
     public async Task LoadInitialFailuresAsync(CancellationToken ct) {
         var hasData = await _fenixFailuresRepository.HasAnyData(ct);
         if (hasData) return;
-        var failures = await _fenixFailuresReader.ReadAsync(ct);
+        using Stream stream = EmbeddedJsonLoader.LoadFromEmbeddedJson(_settings.FailuresJson) ?? throw new ArgumentException("Error al cargar fallas iniciales");
+        var failures = await _fenixFailuresReader.ReadAsync(stream, ct);
+
         if (failures.MajorGroups.Count == 0)
             throw new ArgumentException("Error al cargar fallas iniciales");
 

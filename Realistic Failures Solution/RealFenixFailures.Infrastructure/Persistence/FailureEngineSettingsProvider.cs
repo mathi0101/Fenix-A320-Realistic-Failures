@@ -1,12 +1,13 @@
 using Microsoft.Extensions.Options;
 using RealFenixFailures.Application.Interfaces;
+using RealFenixFailures.Infrastructure.Configuration;
 
 namespace RealFenixFailures.Infrastructure.Persistence;
 
 public class FailureEngineSettingsProvider : IFailureEngineSettings {
-    private readonly FenixEngineSettings _settings;
+    private readonly FailureEngineSettings _settings;
 
-    public FailureEngineSettingsProvider(IOptions<FenixEngineSettings> options) {
+    public FailureEngineSettingsProvider(IOptions<FailureEngineSettings> options) {
         _settings = options.Value;
     }
 

@@ -1,0 +1,234 @@
+﻿<Window x:Class="RealFenixFailures.UI.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:panels="clr-namespace:RealFenixFailures.UI.Views.Panels" 
+        xmlns:vm="clr-namespace:RealFenixFailures.UI.ViewModels" d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
+        mc:Ignorable="d"
+        Title="Realistic A320 Fenix Failures"
+        Height="820" Width="1100"
+        MinHeight="720" MinWidth="900"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="CanResizeWithGrip">
+
+    <Border Background="{StaticResource Brush.Background.Deep}"
+            CornerRadius="12"
+            BorderBrush="#1E2433"
+            BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="40" ShadowDepth="0" Opacity="0.6"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- TITLE BAR -->
+            <Border Grid.Row="0"
+                    Background="#0A0C10"
+                    CornerRadius="12,12,0,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid Margin="16,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Width="24" Height="24" CornerRadius="4"
+                                Background="#1E2433" Margin="0,0,10,0">
+                            <TextBlock Text="✈" FontSize="13"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Brush.Accent.Blue.Primary}"/>
+                        </Border>
+                        <TextBlock Text="REALISTIC A320" FontSize="12" FontWeight="Bold"
+                                   Foreground="{StaticResource Brush.Text.Primary}" VerticalAlignment="Center"/>
+                        <TextBlock Text=" · FENIX FAILURES" FontSize="12"
+                                   Foreground="{StaticResource Brush.Text.Secondary}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="─" Width="32" Height="32" Click="MinimizeWindow"
+                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="20"/>
+                        <Button Content="□" Width="32" Height="32" Click="MaximizeWindow"
+                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="20"/>
+                        <Button Content="✕" Width="32" Height="32" Click="CloseWindow"
+                                Style="{StaticResource GhostButtonStyle}" BorderThickness="0" FontSize="20"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- STATUS BAR -->
+            <Border Grid.Row="1"
+                    Background="#0F1117"
+                    BorderBrush="{StaticResource Brush.Border.Default}"
+                    BorderThickness="0,0,0,1"
+                    Padding="20,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- SimConnect -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,24,0">
+                        <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <Ellipse.Fill>
+                                <SolidColorBrush Color="{Binding SimConnectDotColor}"/>
+                            </Ellipse.Fill>
+                        </Ellipse>
+                        <StackPanel>
+                            <TextBlock Text="MSFS 2020/2024" FontSize="10" FontWeight="Bold"
+                                       Foreground="{StaticResource Brush.Text.Secondary}"/>
+                            <TextBlock Text="{Binding SimConnectStatus}" FontSize="11"
+                                       Foreground="{Binding SimConnectStatusBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Rectangle Grid.Column="1" Width="1" Height="28"
+                               Fill="{StaticResource Brush.Border.Default}" Margin="0,0,24,0"/>
+
+                    <!-- Fenix -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,24,0">
+                        <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <Ellipse.Fill>
+                                <SolidColorBrush Color="{Binding FenixDotColor}"/>
+                            </Ellipse.Fill>
+                        </Ellipse>
+                        <StackPanel>
+                            <TextBlock Text="Fenix System" FontSize="10" FontWeight="Bold"
+                                       Foreground="{StaticResource Brush.Text.Secondary}"/>
+                            <TextBlock Text="{Binding FenixStatus}" FontSize="11"
+                                       Foreground="{Binding FenixStatusBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Flight Phase -->
+                    <Border Grid.Column="3" HorizontalAlignment="Center"
+                            Background="#1A2540" CornerRadius="20" Padding="14,4">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="FASE: " FontSize="10" FontWeight="Bold"
+                                       Foreground="{StaticResource Brush.Text.Secondary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CurrentFlightPhaseDisplay}" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Brush.Accent.Blue.Primary}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Grid.Column="4" Content="↻  Refresh"
+                            Command="{Binding RefreshCommand}"
+                            Style="{StaticResource GhostButtonStyle}"
+                            FontSize="12"/>
+                </Grid>
+            </Border>
+
+            <!-- MAIN CONTENT -->
+            <Grid Grid.Row="2" Margin="20,16,20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="260"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- LEFT: Mode selector -->
+                <DockPanel Grid.Column="0" Margin="0,0,16,0">
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="MODOS" FontSize="10" FontWeight="Bold"
+                               Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,0,0,12"/>
+                    <StackPanel DockPanel.Dock="Top">
+                        <RadioButton Style="{StaticResource ModeCardStyle}"
+                             IsChecked="{Binding IsRealisticModeSelected}"
+                             GroupName="AppMode">       
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                    Background="#2A1C1C" VerticalAlignment="Center">
+                                    <TextBlock Text="🛩️" FontSize="16"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Realista" FontSize="13" FontWeight="SemiBold"
+                                    Foreground="{StaticResource Brush.Text.Primary}"/>
+                                    <TextBlock Text="Basado en historial de vuelos" FontSize="11"
+                                    Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </RadioButton>
+
+                        <RadioButton Style="{StaticResource ModeCardStyle}"
+                                     IsChecked="{Binding IsTrainingModeSelected}"
+                                     GroupName="AppMode">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                        Background="#1C2A3A" VerticalAlignment="Center">
+                                    <TextBlock Text="🎓" FontSize="16"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Entrenamiento" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Brush.Text.Primary}"/>
+                                    <TextBlock Text="Escenarios preestablecidos" FontSize="11"
+                                               Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </RadioButton>
+
+                        <RadioButton Style="{StaticResource ModeCardStyle}"
+                                     IsChecked="{Binding IsCustomModeSelected}"
+                                     GroupName="AppMode">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8"
+                                        Background="#1C2A1C" VerticalAlignment="Center">
+                                    <TextBlock Text="⚙️" FontSize="16"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Personalizado" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Brush.Text.Primary}"/>
+                                    <TextBlock Text="Control manual de fallas" FontSize="11"
+                                               Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </RadioButton>
+
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- RIGHT: Mode content panel — single child Grid inside Border -->
+                <Border Grid.Column="1"
+                        Background="{StaticResource Brush.Background.Card}"
+                        BorderBrush="{StaticResource Brush.Border.Default}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="20">
+                    <Grid>
+                        <panels:TrainingModePanel Visibility="{Binding IsTrainingModeSelected, Converter={StaticResource BoolToVis}}"/>
+                        <panels:CustomModePanel Visibility="{Binding IsCustomModeSelected, Converter={StaticResource BoolToVis}}"/>
+                        <panels:RealisticModePanel Visibility="{Binding IsRealisticModeSelected, Converter={StaticResource BoolToVis}}"/>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- LOG FOOTER -->
+            <panels:LogPanel Grid.Row="3"/>
+
+        </Grid>
+    </Border>
+</Window>

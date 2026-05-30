@@ -47,18 +47,25 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
     #region Public API
 
-    public async Task SetActivePresetAsync(int presetId, CancellationToken cancellationToken) {
-        _activePreset = await _presetService.GetByIdAsync(presetId, cancellationToken);
+    public async Task ActivatePresetAsync(int presetId, CancellationToken ct) {
+        _activePreset = await _presetService.GetByIdAsync(presetId, ct);
+        await ApplyScenarioPresetAsync(ct);
         _logger.LogInformation("Preset {PresetId} loaded: {PresetName}", presetId, _activePreset?.Name);
     }
+    public async Task DeactivatePresetAsync(CancellationToken ct) {
+        var id = _activePreset?.Id;
+        await ResetScenarioPresetAsync(ct);
+        _activePreset = null;
+        _logger.LogInformation("Preset {PresetId} unloaded", id);
+    }
 
-    public async Task ToggleEngineAsync(bool isActive, CancellationToken cancellationToken) {
+    public async Task ToggleEngineAsync(bool isActive, CancellationToken ct) {
         if (IsEngineActive == isActive) return;
 
         IsEngineActive = isActive;
 
         if (!isActive) {
-            await StopEngineAsync(cancellationToken);
+            await StopEngineAsync(ct);
             return;
         }
 
@@ -67,7 +74,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
             return;
         }
 
-        await StartEngineAsync(cancellationToken);
+        await StartEngineAsync(ct);
     }
 
     public void SetPollingInterval(TimeSpan interval) {
@@ -78,17 +85,17 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
         RestartPolling();
     }
 
-    public async Task<ConnectionStatusDto> GetConnectionStatusAsync(CancellationToken cancellationToken) {
-        var simConnected = await _flightDataProvider.IsConnectedAsync(cancellationToken);
-        var fenixConnected = await _fenixDispatcher.IsConnectedAsync(cancellationToken);
+    public async Task<ConnectionStatusDto> GetConnectionStatusAsync(CancellationToken ct) {
+        var simConnected = await _flightDataProvider.IsConnectedAsync(ct);
+        var fenixConnected = await _fenixDispatcher.IsConnectedAsync(ct);
         var phase = simConnected
-            ? await _flightDataProvider.GetCurrentFlightPhaseAsync(cancellationToken)
+            ? await _flightDataProvider.GetCurrentFlightPhaseAsync(ct)
             : FlightPhaseEnum.Unknown;
 
         return new ConnectionStatusDto(simConnected, fenixConnected, phase);
     }
 
-    public Task<List<FailureTriggerLogDto>> GetRecentFailuresAsync(CancellationToken cancellationToken) {
+    public Task<List<FailureTriggerLogDto>> GetRecentFailuresAsync(CancellationToken ct) {
         return Task.FromResult(_recentLogs.OrderByDescending(x => x.TriggeredAtUtc).Take(100).ToList());
     }
 

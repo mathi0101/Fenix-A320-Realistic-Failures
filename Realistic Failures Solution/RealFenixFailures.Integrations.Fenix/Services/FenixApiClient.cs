@@ -18,50 +18,57 @@ public class FenixApiClient : IFenixApiClient {
         _optionsMonitor = optionsMonitor;
         _logger = logger;
     }
-
-    public async Task<FenixManualFailuresResponse?> GetManualFailuresAsync(CancellationToken cancellationToken) {
+    public async Task<bool> IsApiAlive(CancellationToken ct) {
         try {
             var endpoint = BuildEndpointUri(_optionsMonitor.CurrentValue.ManualFailuresPath);
-            using var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+            var response = await _httpClient.GetAsync(endpoint, ct);
+
+            return response.IsSuccessStatusCode;
+        } catch (HttpRequestException ex) {
+            _logger.LogWarning(ex, "Unable to connect to Fenix API GET manual failures endpoint.");
+            return false;
+        } catch (TaskCanceledException ex) {
+            _logger.LogWarning("Timeout while requesting Fenix API GET manual failures endpoint.");
+            return false;
+        }
+    }
+
+    public async Task<Stream?> GetManualFailuresAsync(CancellationToken ct) {
+        try {
+            var endpoint = BuildEndpointUri(_optionsMonitor.CurrentValue.ManualFailuresPath);
+            var response = await _httpClient.GetAsync(endpoint, ct);
 
             if (!response.IsSuccessStatusCode) {
                 _logger.LogWarning("Fenix GET manual failures returned status code {StatusCode}", response.StatusCode);
                 return null;
             }
-
-            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var payload = await JsonSerializer.DeserializeAsync<FenixManualFailuresResponse>(stream, JsonOptions, cancellationToken);
-            if (payload is null) {
-                return new FenixManualFailuresResponse(Array.Empty<FenixAtaBlock>());
-            }
-
-            return payload.Atas is null
-                ? payload with { Atas = Array.Empty<FenixAtaBlock>() }
-                : payload;
+            var stream = await response.Content.ReadAsStreamAsync(ct);
+            return stream;
         } catch (HttpRequestException ex) {
             _logger.LogWarning(ex, "Unable to connect to Fenix API GET manual failures endpoint.");
             return null;
         } catch (TaskCanceledException ex) {
             _logger.LogWarning("Timeout while requesting Fenix API GET manual failures endpoint.");
             return null;
-        } catch (JsonException ex) {
-            _logger.LogError(ex, "Invalid JSON received from Fenix GET manual failures endpoint.");
-            return null;
         }
     }
 
-    public async Task SetManualFailureAsync(FenixSaveManualRequest rq, CancellationToken cancellationToken) {
+    public async Task<Stream?> SendFailureAsync(FenixSaveManualRequest rq, CancellationToken ct) {
         try {
             var endpoint = BuildEndpointUri(_optionsMonitor.CurrentValue.SaveManualPath);
-            using var response = await _httpClient.PostAsJsonAsync(endpoint, rq, JsonOptions, cancellationToken);
+            var response = await _httpClient.PostAsJsonAsync(endpoint, rq, JsonOptions, ct);
 
             if (!response.IsSuccessStatusCode) {
                 _logger.LogWarning("Fenix POST saveManual failed for {FailureId}. Status code {StatusCode}", rq.Id, response.StatusCode);
+                return null;
             }
+            return await response.Content.ReadAsStreamAsync(ct);
         } catch (HttpRequestException ex) {
             _logger.LogWarning(ex, "Unable to connect to Fenix API POST saveManual endpoint for {FailureId}", rq.Id);
+            return null;
         } catch (TaskCanceledException ex) {
             _logger.LogWarning(ex, "Timeout while calling Fenix API POST saveManual endpoint for {FailureId}", rq.Id);
+            return null;
         }
     }
 
@@ -76,4 +83,6 @@ public class FenixApiClient : IFenixApiClient {
 
         return builder.Uri;
     }
+
+
 }

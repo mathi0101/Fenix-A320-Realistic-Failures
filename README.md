@@ -4,6 +4,10 @@ Realistic A320 Fenix Failures is a background application designed to improve fa
 
 The purpose of the project is to create a more immersive and believable failure system by combining simulator context with aircraft-specific system data, allowing failures to occur in a way that feels operationally coherent instead of purely random.
 
+## Vision
+
+This project aims to bring a deeper level of realism to the Fenix A320 by generating failures that make sense in context, feel plausible during operation, and add meaningful challenge to each flight.
+
 ## Project Goal
 
 The main goal is to develop a tool that can:
@@ -85,6 +89,13 @@ To install the SDK:
 4. Go to Help
 5. Launch the SDK Installer
 
-## Vision
+### Dependencias externas
 
-This project aims to bring a deeper level of realism to the Fenix A320 by generating failures that make sense in context, feel plausible during operation, and add meaningful challenge to each flight.
+- Microsoft SimConnect (MSFS SDK) — no incluido. Obtenerlo desde el SDK oficial.  
+- Fenix Simulations — software comercial; no redistribuido ni incluido.
+
+## Licencia
+Este proyecto está bajo la Licencia Apache 2.0. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+
+## Donaciones
+Si este software te resulta útil y quieres apoyar su mejora continua, puedes realizar una donación voluntaria.
