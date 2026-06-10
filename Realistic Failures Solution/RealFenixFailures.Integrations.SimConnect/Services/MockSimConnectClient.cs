@@ -1,5 +1,4 @@
-﻿using RealFenixFailures.Domain.Enums;
-using RealFenixFailures.Integrations.SimConnect.Interfaces;
+﻿using RealFenixFailures.Integrations.SimConnect.Interfaces;
 using RealFenixFailures.Integrations.SimConnect.Models;
 
 namespace RealFenixFailures.Integrations.SimConnect;
@@ -11,7 +10,7 @@ public class MockSimConnectClient : ISimConnectClient {
     // Constructor que permite configurar las respuestas por defecto
     public MockSimConnectClient(bool isConnected = true, SimAircraftState aircraftState = null) {
         _isConnected = isConnected;
-        _aircraftState = aircraftState ?? new SimAircraftState(true, FlightPhaseEnum.Cruise);
+        _aircraftState = aircraftState ?? new SimAircraftState { IsConnected = true };
     }
 
     // Método para actualizar manualmente el estado de conexión

@@ -4,8 +4,60 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:vm="clr-namespace:RealFenixFailures.UI.ViewModels" d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
+             xmlns:local="clr-namespace:RealFenixFailures.Domain.Enums;assembly=RealFenixFailures.Domain"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <!-- Tag Border Style: cambia background según Difficulty -->
+        <Style x:Key="TagBorderStyle" TargetType="Border">
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="Background" Value="#1A2A1A" />
+            <!-- Borde sutil para separar contra el fondo oscuro -->
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#22000000" />
+            <Style.Triggers>
+                <!-- Si Difficulty es string -->
+                <DataTrigger Binding="{Binding Difficulty}" Value="Easy">
+                    <Setter Property="Background" Value="#1E7F3A" />
+                    <!-- verde -->
+                    <Setter Property="BorderBrush" Value="#331E7F3A" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Difficulty}" Value="Medium">
+                    <Setter Property="Background" Value="#C6A700" />
+                    <!-- mostaza -->
+                    <Setter Property="BorderBrush" Value="#33C6A700" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Difficulty}" Value="Hard">
+                    <Setter Property="Background" Value="#D85A2A" />
+                    <!-- naranja quemado -->
+                    <Setter Property="BorderBrush" Value="#33D85A2A" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Difficulty}" Value="Insane">
+                    <Setter Property="Background" Value="#6F2DBD" />
+                    <!-- violeta moderado -->
+                    <Setter Property="BorderBrush" Value="#336F2DBD" />
+                </DataTrigger>
+
+                <!--
+                Comentario: si Difficulty es enum, reemplaza los DataTrigger Value por:
+                Value="{x:Static local:DifficultyEnum.Easy}"  etc.
+                -->
+            </Style.Triggers>
+        </Style>
+
+        <!-- Tag Text Style: por defecto texto oscuro, easy usa texto claro -->
+        <Style x:Key="TagTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="#0F1720" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Difficulty}" Value="Easy">
+                    <Setter Property="Foreground" Value="#FFFFFFFF" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -44,13 +96,15 @@
                                                Foreground="{StaticResource Brush.Text.Secondary}"
                                                TextWrapping="Wrap" Margin="0,3,0,0"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <!-- Phase tag (mantengo su estilo) -->
                                         <Border Background="#1A2540" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
                                             <TextBlock Text="{Binding Phase}" FontSize="10"
                                                        Foreground="{StaticResource Brush.Accent.Blue.Primary}"/>
                                         </Border>
-                                        <Border Background="#1A2A1A" CornerRadius="4" Padding="6,2">
-                                            <TextBlock Text="{Binding Difficulty}" FontSize="10"
-                                                       Foreground="{StaticResource Brush.Accent.Green.Primary}"/>
+
+                                        <!-- Difficulty tag: usa estilos definidos -->
+                                        <Border Style="{StaticResource TagBorderStyle}" Margin="0,0,0,0">
+                                            <TextBlock Text="{Binding Difficulty}" Style="{StaticResource TagTextStyle}" />
                                         </Border>
                                     </StackPanel>
                                 </StackPanel>

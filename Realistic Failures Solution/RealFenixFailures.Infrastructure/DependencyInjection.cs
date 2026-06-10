@@ -21,8 +21,10 @@ public static class DependencyInjection {
             var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
             options.UseSqlite(connectionString)
                 .UseLoggerFactory(loggerFactory)
-                .EnableSensitiveDataLogging()
                 .EnableDetailedErrors();
+#if DEBUG
+            options.EnableSensitiveDataLogging();
+#endif
         });
         services.Configure<FailureEngineSettings>(configuration.GetSection(FailureEngineSettings.SectionName));
         services.AddScoped<IFailureEngineSettings, FailureEngineSettingsProvider>();
