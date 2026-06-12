@@ -5,7 +5,6 @@ using RealFenixFailures.Domain.Enums;
 using RealFenixFailures.Domain.Helpers;
 using RealFenixFailures.Domain.Interfaces;
 using RealFenixFailures.Domain.Services;
-using RealFenixFailures.Infrastructure.Configuration;
 
 namespace RealFenixFailures.Infrastructure.Services;
 

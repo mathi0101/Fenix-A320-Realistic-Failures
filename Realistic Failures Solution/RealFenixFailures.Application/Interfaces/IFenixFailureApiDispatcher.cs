@@ -1,11 +1,11 @@
+using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.Domain.DTOs;
-using RealFenixFailures.Integrations.Fenix.Models;
 
-namespace RealFenixFailures.Integrations.Fenix;
+namespace RealFenixFailures.Application.Interfaces;
 
-public interface IFenixApiFailureService {
+public interface IFenixFailureApiDispatcher {
     Task<bool> IsApiAvailableAsync(CancellationToken ct);
     Task<AllFenixFailuresResponseDto> GetAllFailuresAsync(CancellationToken ct);
-    Task<bool> ArmFailureAsync(FenixSaveManualRequest def, CancellationToken ct);
+    Task<bool> ArmFailureAsync(FenixArmFailureRequest def, CancellationToken ct);
     Task<bool> ResetAllFailuresAsync(CancellationToken ct);
 }

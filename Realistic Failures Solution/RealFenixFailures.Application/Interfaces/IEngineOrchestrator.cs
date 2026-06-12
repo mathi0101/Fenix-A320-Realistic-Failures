@@ -1,13 +1,31 @@
 using RealFenixFailures.Application.DTOs;
+using RealFenixFailures.Domain.Enums;
+using System.ComponentModel;
 
 namespace RealFenixFailures.Application.Interfaces;
 
-public interface IEngineOrchestrator {
+public interface IEngineOrchestrator : INotifyPropertyChanged {
     bool IsEngineActive { get; }
-    Task ActivatePresetAsync(int presetId, CancellationToken ct);
-    Task DeactivatePresetAsync(CancellationToken ct);
-    Task ToggleEngineAsync(bool isActive, CancellationToken ct);
-    Task<ConnectionStatusDto> GetConnectionStatusAsync(CancellationToken ct);
+    UserAppMode CurrentMode { get; }
+
+    ConnectionStatusDto ConnectionStatus { get; }
+
+    /// Metodos para controlar la actualizacion automática
+    Task StartAutomaticTimerAsync(CancellationToken ct);
+    Task UpdateConnection(CancellationToken ct);
+    Task StopAutomaticTimerAsync(CancellationToken ct);
+    bool IsTimerRunning { get; }
+
+    // Métodos para controlar el motor de fallas
+    Task StartRealisticModeAsync(int presetId, CancellationToken ct);
+    Task StartTrainingPresetAsync(int presetId, CancellationToken ct);
+    Task StartCustomModeAsync(int presetId, bool activateImmediately, CancellationToken ct);
+
+    Task StopCurrentModeAsync(CancellationToken ct);
+
+    // Método para obtener el historial de fallas recientes
     Task<List<FailureTriggerLogDto>> GetRecentFailuresAsync(CancellationToken ct);
-    Task PollAndTriggerAsync(CancellationToken ct);
+
+    // Método para verificar el estado del preset activo (para modo entrenamiento)
+    Task<bool> IsPresetArmedAsync(CancellationToken ct);
 }

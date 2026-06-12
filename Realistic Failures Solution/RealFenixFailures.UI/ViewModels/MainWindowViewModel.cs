@@ -7,13 +7,14 @@ using RealFenixFailures.UI.Commands;
 using RealFenixFailures.UI.ViewModels.Base;
 using RealFenixFailures.UI.ViewModels.Extra;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows.Media;
 
 namespace RealFenixFailures.UI.ViewModels;
 
-public class MainWindowViewModel : ObservableObject {
-    // Representa qué "modo" está corriendo ahora (si corresponde)
-    private enum AppMode { None, Training, Custom, Realistic }
+public class MainWindowViewModel : ObservableObject, IDisposable {
+
+    #region Fields
 
     private readonly IEngineOrchestrator _orchestrator;
     private readonly IPresetService _presetService;
@@ -21,14 +22,12 @@ public class MainWindowViewModel : ObservableObject {
     private readonly ILogger<MainWindowViewModel> _logger;
 
     // Connection state
-    private string _simConnectStatus = "Disconnected";
-    private string _fenixStatus = "Disconnected";
-    private FlightPhaseEnum _currentFlightPhase = FlightPhaseEnum.Unknown;
-    private bool _isSimConnectConnected;
-    private bool _isFenixConnected;
+    private FlightPhaseEnum currentFlightPhase = FlightPhaseEnum.Unknown;
+    private bool isSimConnected = false;
+    private bool isFenixConnected = false;
 
     // Active mode (representa el modo "ejecutándose")
-    private AppMode _activeMode = AppMode.None;
+    private UserAppMode _activeMode = UserAppMode.None;
 
     // Panel selection (qué panel muestra la UI para configurar)
     private bool _isRealisticModeSelected;
@@ -52,6 +51,9 @@ public class MainWindowViewModel : ObservableObject {
     private int _engine1WearPercent;
     private int _engine2WearPercent;
     private int _hydraulicsWearPercent;
+    #endregion
+
+    #region Constructor
 
     public MainWindowViewModel(
         IEngineOrchestrator orchestrator,
@@ -62,6 +64,9 @@ public class MainWindowViewModel : ObservableObject {
         _presetService = presetService;
         _flightHistoryService = flightHistoryService;
         _logger = logger;
+
+        // Suscribirse a los eventos del orquestador
+        _orchestrator.PropertyChanged += Orchestrator_PropertyChanged;
 
         TrainingScenarios = new ObservableCollection<TrainingScenarioViewModel>();
         CustomPresets = new ObservableCollection<CustomPresetViewModel>();
@@ -87,11 +92,11 @@ public class MainWindowViewModel : ObservableObject {
         // initial update of command states (in case initial flags differ)
         UpdateCommandStates();
     }
+    #endregion
 
-    // Collections
-    public ObservableCollection<TrainingScenarioViewModel> TrainingScenarios { get; }
-    public ObservableCollection<CustomPresetViewModel> CustomPresets { get; }
-    public ObservableCollection<string> LogEntries { get; }
+    #region Properties
+
+    #region Commands
 
     // Commands
     public RelayCommand RefreshCommand { get; }
@@ -104,21 +109,50 @@ public class MainWindowViewModel : ObservableObject {
     public RelayCommand<CustomPresetViewModel> ActivateCustomPresetCommand { get; }
     public RelayCommand<CustomPresetViewModel> DeleteCustomPresetCommand { get; }
 
+    #endregion
+
+    #region Observed Properties 
+
+    // Collections
+    public ObservableCollection<TrainingScenarioViewModel> TrainingScenarios { get; }
+    public ObservableCollection<CustomPresetViewModel> CustomPresets { get; }
+    public ObservableCollection<string> LogEntries { get; }
+
     // Connection status
-    public string SimConnectStatus {
-        get => _simConnectStatus;
-        set => SetProperty(ref _simConnectStatus, value);
+
+    public bool IsSimConnected {
+        get => isSimConnected;
+        set {
+            if (isSimConnected != value) {
+                isSimConnected = value;
+                OnPropertyChanged(nameof(IsSimConnected));
+                OnPropertyChanged(nameof(SimConnectDotColor));
+                OnPropertyChanged(nameof(SimConnectStatus));
+                OnPropertyChanged(nameof(CurrentFlightPhase));
+            }
+        }
     }
 
-    public string FenixStatus {
-        get => _fenixStatus;
-        set => SetProperty(ref _fenixStatus, value);
+    public bool IsFenixConnected {
+        get => isFenixConnected;
+        set {
+            if (isFenixConnected != value) {
+                isFenixConnected = value;
+                OnPropertyChanged(nameof(IsFenixConnected));
+                OnPropertyChanged(nameof(FenixDotColor));
+                OnPropertyChanged(nameof(FenixStatus));
+            }
+        }
     }
+
+    public string SimConnectStatus => isSimConnected ? "Connected" : "Disconnected";
+    public string FenixStatus => isFenixConnected ? "Connected" : "Disconnected";
+
 
     public FlightPhaseEnum CurrentFlightPhase {
-        get => _currentFlightPhase;
-        set {
-            if (SetProperty(ref _currentFlightPhase, value))
+        get => currentFlightPhase;
+        private set {
+            if (SetProperty(ref currentFlightPhase, value))
                 OnPropertyChanged(nameof(CurrentFlightPhaseDisplay));
         }
     }
@@ -126,31 +160,27 @@ public class MainWindowViewModel : ObservableObject {
     public string CurrentFlightPhaseDisplay => CurrentFlightPhase.ToString().ToUpperInvariant();
 
     // Dot colors (binding antiguo en XAML)
-    public Color SimConnectDotColor => _isSimConnectConnected ? Color.FromRgb(34, 197, 94) : Color.FromRgb(100, 116, 139);
-    public Color FenixDotColor => _isFenixConnected ? Color.FromRgb(34, 197, 94) : Color.FromRgb(100, 116, 139);
+    public Color SimConnectDotColor => isSimConnected ? Color.FromRgb(34, 197, 94) : Color.FromRgb(100, 116, 139);
+    public Color FenixDotColor => isFenixConnected ? Color.FromRgb(34, 197, 94) : Color.FromRgb(100, 116, 139);
 
     // Status brushes (puede usarse directamente en XAML)
-    public Brush SimConnectStatusBrush => _isSimConnectConnected
+    public Brush SimConnectStatusBrush => isSimConnected
         ? new SolidColorBrush(Color.FromRgb(34, 197, 94))
         : new SolidColorBrush(Color.FromRgb(100, 116, 139));
 
-    public Brush FenixStatusBrush => _isFenixConnected
+    public Brush FenixStatusBrush => isFenixConnected
         ? new SolidColorBrush(Color.FromRgb(34, 197, 94))
         : new SolidColorBrush(Color.FromRgb(100, 116, 139));
 
     // Si el orchestrator indica que hay conexión en ambos servicios (puede arrancar "engine" realista)
-    public bool CanStartEngine => _isSimConnectConnected && _isFenixConnected;
+    public bool CanStartEngine => isSimConnected && isFenixConnected;
 
-    public bool ShowConnectionWarning => !CanStartEngine && ActiveMode == AppMode.Realistic;
+    public bool ShowConnectionWarning => !CanStartEngine && ActiveMode == UserAppMode.Realistic;
 
-    // Engine / Mode state (valor reflejado desde VM, pero la lógica corre en IEngineOrchestrator)
-    public bool IsEngineActive {
-        get => _isEngineActive;
-        private set => SetProperty(ref _isEngineActive, value);
-    }
+    public bool IsEngineActive => _orchestrator.IsEngineActive;
 
     // Control local del modo activo (se actualiza al activar/desactivar via orchestrator)
-    private AppMode ActiveMode {
+    private UserAppMode ActiveMode {
         get => _activeMode;
         set {
             if (_activeMode == value) return;
@@ -172,23 +202,21 @@ public class MainWindowViewModel : ObservableObject {
 
             OnPropertyChanged(nameof(EngineToggleText));
 
-            IsEngineActive = _activeMode == AppMode.Realistic;
-
             // Re-evaluar comandos
             UpdateCommandStates();
         }
     }
 
-    public bool IsAnyModeActive => ActiveMode != AppMode.None;
-    public bool CanSwitchModes => ActiveMode == AppMode.None;
+    public bool IsAnyModeActive => ActiveMode != UserAppMode.None;
+    public bool CanSwitchModes => ActiveMode == UserAppMode.None;
 
-    public bool IsTrainingActive => ActiveMode == AppMode.Training;
-    public bool IsCustomActive => ActiveMode == AppMode.Custom;
-    public bool IsRealisticActive => ActiveMode == AppMode.Realistic;
+    public bool IsTrainingActive => ActiveMode == UserAppMode.Training;
+    public bool IsCustomActive => ActiveMode == UserAppMode.Custom;
+    public bool IsRealisticActive => ActiveMode == UserAppMode.Realistic;
 
     // Derived properties for button availability (used by canExecute)
-    public bool CanStartTraining => SelectedTrainingScenario is not null && (!IsAnyModeActive || IsTrainingActive);
-    public bool CanActivateCustomPreset => (!IsAnyModeActive || IsCustomActive);
+    public bool CanStartTraining => SelectedTrainingScenario is not null && (!IsAnyModeActive || IsTrainingActive) && IsFenixConnected;
+    public bool CanActivateCustomPreset => (!IsAnyModeActive || IsCustomActive) && IsFenixConnected;
     public bool CanToggleRealistic => (!IsAnyModeActive || IsRealisticActive) && CanStartEngine;
 
     public string TrainingStartText => IsTrainingActive ? "⏹ DETENER ESCENARIO" : "▶ INICIAR ESCENARIO";
@@ -209,7 +237,7 @@ public class MainWindowViewModel : ObservableObject {
     public bool IsTrainingModeSelected {
         get => _isTrainingModeSelected;
         set {
-            if (!CanSwitchModes && value && ActiveMode != AppMode.Training) return;
+            if (!CanSwitchModes && value && ActiveMode != UserAppMode.Training) return;
             SetProperty(ref _isTrainingModeSelected, value);
         }
     }
@@ -217,7 +245,7 @@ public class MainWindowViewModel : ObservableObject {
     public bool IsCustomModeSelected {
         get => _isCustomModeSelected;
         set {
-            if (!CanSwitchModes && value && ActiveMode != AppMode.Custom) return;
+            if (!CanSwitchModes && value && ActiveMode != UserAppMode.Custom) return;
             SetProperty(ref _isCustomModeSelected, value);
         }
     }
@@ -225,7 +253,7 @@ public class MainWindowViewModel : ObservableObject {
     public bool IsRealisticModeSelected {
         get => _isRealisticModeSelected;
         set {
-            if (!CanSwitchModes && value && ActiveMode != AppMode.Realistic) return;
+            if (!CanSwitchModes && value && ActiveMode != UserAppMode.Realistic) return;
             SetProperty(ref _isRealisticModeSelected, value);
         }
     }
@@ -304,19 +332,61 @@ public class MainWindowViewModel : ObservableObject {
         < 70 => Color.FromRgb(245, 158, 11),  // amber
         _ => Color.FromRgb(239, 68, 68)       // red
     };
+    #endregion
+
+    #endregion
+
+    #region Initialize
 
     // Initialization
     public async Task InitializeAsync() {
+        await LoadTrainingScenarios();
         await RefreshAsync();
+        await _orchestrator.StartAutomaticTimerAsync(CancellationToken.None);
     }
 
+    #endregion
+
+    #region Orchestator Property Changed Event
+
+    // Event handler para los cambios en el orquestador
+    private async void Orchestrator_PropertyChanged(object? sender, PropertyChangedEventArgs e) {
+        // Actualizar la UI cuando cambian las propiedades relevantes del orquestador
+        if (e.PropertyName == nameof(IEngineOrchestrator.IsEngineActive) || e.PropertyName == nameof(IEngineOrchestrator.CurrentMode)) {
+            OnPropertyChanged(nameof(IsEngineActive));
+            OnPropertyChanged(nameof(ActiveMode));
+            OnPropertyChanged(nameof(CanStartEngine));
+            OnPropertyChanged(nameof(ShowConnectionWarning));
+            OnPropertyChanged(nameof(EngineToggleText));
+            UpdateCommandStates();
+
+        }
+        if (e.PropertyName == nameof(IEngineOrchestrator.ConnectionStatus)) {
+            var status = _orchestrator.ConnectionStatus;
+            IsSimConnected = status.IsSimConnectConnected;
+            IsFenixConnected = status.IsFenixConnected;
+            CurrentFlightPhase = _orchestrator.ConnectionStatus.CurrentFlightPhase;
+
+
+            OnPropertyChanged(nameof(SimConnectDotColor));
+            OnPropertyChanged(nameof(FenixDotColor));
+            OnPropertyChanged(nameof(SimConnectStatusBrush));
+            OnPropertyChanged(nameof(FenixStatusBrush));
+        }
+    }
+
+    #endregion
+
     // --- Private helpers and commands that delegate to orchestrator (no engine logic here) ---
+
+    #region Private
+
 
     private async Task LoadTrainingScenarios() {
         TrainingScenarios.Clear();
         var presets = await _presetService.GetTrainingPresetsAsync(CancellationToken.None);
         if (presets == null || presets.Count == 0) return;
-        foreach (var p in presets) {
+        foreach (var p in presets.OrderBy(x => x.Difficulty).ThenBy(x => x.FlightPhase)) {
             TrainingScenarios.Add(new TrainingScenarioViewModel {
                 Id = p.Id,
                 Name = p.Name,
@@ -337,44 +407,49 @@ public class MainWindowViewModel : ObservableObject {
     private async Task StartOrStopTrainingScenarioAsync() {
         if (SelectedTrainingScenario is null) return;
 
-        if (ActiveMode == AppMode.Training) {
+        if (ActiveMode == UserAppMode.Training) {
             // Stop training scenario via orchestrator
-            await DeactivateCurrentModeAsync();
+            await _orchestrator.StopCurrentModeAsync(CancellationToken.None);
             _logger.LogInformation("Training scenario stopped: {Name}", SelectedTrainingScenario.Name);
+
+            ActiveMode = UserAppMode.None;
             return;
         }
 
         if (IsAnyModeActive) return;
 
-        // Activate the preset in orchestrator and toggle engine ON (orchestrator will apply the scenario)
-        await _orchestrator.ActivatePresetAsync(SelectedTrainingScenario.Id, CancellationToken.None);
+        // Activate the preset in orchestrator for training mode
+        await _orchestrator.StartTrainingPresetAsync(SelectedTrainingScenario.Id, CancellationToken.None);
 
-        ActiveMode = AppMode.Training;
+        ActiveMode = UserAppMode.Training;
         _logger.LogInformation("Training scenario started: {Name}", SelectedTrainingScenario.Name);
 
         // Refresh UI state from orchestrator
-        await UpdateStatusAsync();
+        UpdateCommandStates();
         await RefreshLogsAsync();
     }
 
     private async Task ActivateCustomPresetAsync(CustomPresetViewModel? preset) {
         if (preset is null) return;
 
-        if (ActiveMode == AppMode.Custom) {
-            await DeactivateCurrentModeAsync();
+        if (ActiveMode == UserAppMode.Custom) {
+            await _orchestrator.StopCurrentModeAsync(CancellationToken.None);
             _logger.LogInformation("Custom preset stopped: {Name}", preset.Name);
+
+            ActiveMode = UserAppMode.None;
             return;
         }
 
         if (IsAnyModeActive) return;
 
-        await _orchestrator.ActivatePresetAsync(preset.Id, CancellationToken.None);
-        await _orchestrator.ToggleEngineAsync(true, CancellationToken.None);
+        // TODO: En modo custom necesitamos decidir si activar inmediatamente o solo armar
+        // Por ahora asumimos que activamos inmediatamente
+        await _orchestrator.StartCustomModeAsync(preset.Id, true, CancellationToken.None);
 
-        ActiveMode = AppMode.Custom;
+        ActiveMode = UserAppMode.Custom;
         _logger.LogInformation("Custom preset triggered: {Name}", preset.Name);
 
-        await UpdateStatusAsync();
+        UpdateCommandStates();
         await RefreshLogsAsync();
     }
 
@@ -386,8 +461,9 @@ public class MainWindowViewModel : ObservableObject {
 
     // Realistic mode toggle: VM delegates entirely to orchestrator.
     private async Task ToggleRealisticModeAsync() {
-        if (ActiveMode == AppMode.Realistic) {
-            await DeactivateCurrentModeAsync();
+        if (ActiveMode == UserAppMode.Realistic) {
+            await _orchestrator.StopCurrentModeAsync(CancellationToken.None);
+            ActiveMode = UserAppMode.None;
             return;
         }
 
@@ -401,27 +477,14 @@ public class MainWindowViewModel : ObservableObject {
             return;
         }
 
-        await _orchestrator.ActivatePresetAsync(realisticPreset.Id, CancellationToken.None);
-        await _orchestrator.ToggleEngineAsync(true, CancellationToken.None);
+        // En modo realista, necesitamos determinar qué tipo de modo realista usar
+        // Por ahora usamos un valor por defecto, pero podría venir de la UI
+        await _orchestrator.StartRealisticModeAsync(realisticPreset.Id, CancellationToken.None);
 
-        ActiveMode = AppMode.Realistic;
+        ActiveMode = UserAppMode.Realistic;
         _logger.LogInformation("Realistic mode activated (orchestrator handles polling/triggers).");
 
-        await UpdateStatusAsync();
-        await RefreshLogsAsync();
-        await RefreshRealisticStatsAsync();
-    }
-
-    // Centralized stop for current active mode
-    private async Task DeactivateCurrentModeAsync() {
-        if (!IsAnyModeActive) return;
-
-        // Deactivate preset in orchestrator (cleans state)
-        await _orchestrator.DeactivatePresetAsync(CancellationToken.None);
-
-        ActiveMode = AppMode.None;
-
-        await UpdateStatusAsync();
+        UpdateCommandStates();
         await RefreshLogsAsync();
         await RefreshRealisticStatsAsync();
     }
@@ -445,6 +508,7 @@ public class MainWindowViewModel : ObservableObject {
 
     private async Task RefreshAsync() {
         // Load custom presets
+        await _orchestrator.UpdateConnection(CancellationToken.None);
         var presets = await _presetService.GetCustomPresetsAsync(CancellationToken.None);
         CustomPresets.Clear();
         foreach (var p in presets) {
@@ -454,36 +518,12 @@ public class MainWindowViewModel : ObservableObject {
                 FailureCount = p.PresetFailureDefinitions.Count
             });
         }
-        await LoadTrainingScenarios();
-        await UpdateStatusAsync();
+        UpdateCommandStates();
         await RefreshLogsAsync();
         await RefreshRealisticStatsAsync();
     }
 
-    private async Task UpdateStatusAsync() {
-        var status = await _orchestrator.GetConnectionStatusAsync(CancellationToken.None);
-        _isSimConnectConnected = status.IsSimConnectConnected;
-        _isFenixConnected = status.IsFenixConnected;
-        SimConnectStatus = _isSimConnectConnected ? "Connected" : "Disconnected";
-        FenixStatus = _isFenixConnected ? "Connected" : "Disconnected";
-        CurrentFlightPhase = status.CurrentFlightPhase;
 
-        // reflect engine state from orchestrator
-        IsEngineActive = _orchestrator.IsEngineActive;
-
-        // notify color/brush bindings
-        OnPropertyChanged(nameof(SimConnectDotColor));
-        OnPropertyChanged(nameof(FenixDotColor));
-        OnPropertyChanged(nameof(SimConnectStatusBrush));
-        OnPropertyChanged(nameof(FenixStatusBrush));
-        OnPropertyChanged(nameof(CanStartEngine));
-        OnPropertyChanged(nameof(ShowConnectionWarning));
-        OnPropertyChanged(nameof(EngineToggleText));
-        OnPropertyChanged(nameof(IsEngineActive));
-
-        // Re-evaluar comandos al cambiar estado de conexión/engine
-        UpdateCommandStates();
-    }
 
     private async Task RefreshLogsAsync() {
         var logs = await _orchestrator.GetRecentFailuresAsync(CancellationToken.None);
@@ -509,18 +549,20 @@ public class MainWindowViewModel : ObservableObject {
     // ----- Helpers -----
     private void UpdateCommandStates() {
         // Asumo que tu RelayCommand tiene RaiseCanExecuteChanged(); si tu implementación tiene otro nombre, ajustalo.
-        try {
-            RefreshCommand?.RaiseCanExecuteChanged();
-            ToggleEngineCommand?.RaiseCanExecuteChanged();
-            ToggleRealisticModeCommand?.RaiseCanExecuteChanged();
-            StartTrainingScenarioCommand?.RaiseCanExecuteChanged();
-            ActivateCustomPresetCommand?.RaiseCanExecuteChanged();
-            CreateCustomPresetCommand?.RaiseCanExecuteChanged();
-            DeleteCustomPresetCommand?.RaiseCanExecuteChanged();
-            ApplySettingsCommand?.RaiseCanExecuteChanged();
-        } catch {
-            // Si tu RelayCommand no expone RaiseCanExecuteChanged, simplemente no hacemos nada.
-            // Alternativa: enlazar IsEnabled en XAML a las props CanStartTraining/CanToggleRealistic/...
-        }
+        RefreshCommand?.RaiseCanExecuteChanged();
+        ToggleEngineCommand?.RaiseCanExecuteChanged();
+        ToggleRealisticModeCommand?.RaiseCanExecuteChanged();
+        StartTrainingScenarioCommand?.RaiseCanExecuteChanged();
+        ActivateCustomPresetCommand?.RaiseCanExecuteChanged();
+        CreateCustomPresetCommand?.RaiseCanExecuteChanged();
+        DeleteCustomPresetCommand?.RaiseCanExecuteChanged();
+        ApplySettingsCommand?.RaiseCanExecuteChanged();
+    }
+    #endregion
+
+    // Liberar recursos
+    public void Dispose() {
+        _orchestrator.StopAutomaticTimerAsync(CancellationToken.None);
+        _orchestrator.PropertyChanged -= Orchestrator_PropertyChanged;
     }
 }

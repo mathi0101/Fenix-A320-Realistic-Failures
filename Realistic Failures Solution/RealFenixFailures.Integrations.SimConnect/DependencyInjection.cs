@@ -12,7 +12,7 @@ public static class DependencyInjection {
 #else
         services.AddSingleton<ISimConnectClient, SimConnectClient>();
 #endif
-        services.AddSingleton<IFlightDataProvider, SimConnectFlightDataProvider>();
+        services.AddSingleton<ISimFlightDataProvider, SimulatorFlightDataProvider>();
         return services;
     }
 }

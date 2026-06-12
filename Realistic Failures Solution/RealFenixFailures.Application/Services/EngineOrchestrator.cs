@@ -1,183 +1,403 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Domain.Entities;
 using RealFenixFailures.Domain.Enums;
 using RealFenixFailures.Domain.Interfaces;
+using RealFenixFailures.Domain.Services;
 using System.Collections.Concurrent;
+using System.ComponentModel;
 
 namespace RealFenixFailures.Application.Services;
 
 public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
+    #region Fields
+
     private readonly IPresetService _presetService;
     private readonly ISessionService _sessionService;
-    private readonly IFlightDataProvider _flightDataProvider;
-    private readonly IFenixFailureDispatcher _fenixDispatcher;
-    private readonly IFailureEngineSettings _settings;
+    private readonly ISimulatorConnectionService _simulatorConnectionService;
+    private readonly FailureEngineSettings _settings;
     private readonly IFailureTrigger _failureTrigger;
     private readonly ILogger<EngineOrchestrator> _logger;
 
     private readonly ConcurrentBag<FailureTriggerLogDto> _recentLogs = new();
-    private readonly SemaphoreSlim _pollingLock = new(1, 1);
-    private readonly CancellationTokenSource _cts = new();
+    private readonly SemaphoreSlim _operationLock = new(1, 1);
 
-    private PeriodicTimer? _timer;
+    private readonly CancellationTokenSource _realisticEngineCts = new();
+    private PeriodicTimer? _realisticEngineTimer;
+
     private FailurePreset? _activePreset;
     private FlightSession? _activeSession;
-    private List<string> _activeScenarioFailures = new();
 
-    public bool IsEngineActive { get; private set; }
+    private PeriodicTimer? _automaticTimer;
+    private CancellationTokenSource? _automaticTimerCts;
+
+
+    private List<string> _activeScenarioFailures = new();
+    #endregion
+
+    #region TrackedProperties
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private bool isEngineActive;
+    private bool isTimerRunning;
+    private UserAppMode currentMode = UserAppMode.None;
+    private ConnectionStatusDto connectionStatus;
+
+    public bool IsEngineActive {
+        get => isEngineActive;
+        private set {
+            if (isEngineActive != value) {
+                isEngineActive = value;
+                OnPropertyChanged(nameof(IsEngineActive));
+            }
+        }
+    }
+
+    public UserAppMode CurrentMode {
+        get => currentMode;
+        private set {
+            if (currentMode != value) {
+                currentMode = value;
+                OnPropertyChanged(nameof(CurrentMode));
+            }
+        }
+    }
+
+    public bool IsTimerRunning {
+        get => isTimerRunning;
+        private set {
+            if (isTimerRunning != value) {
+                isTimerRunning = value;
+                OnPropertyChanged(nameof(IsTimerRunning));
+            }
+        }
+    }
+    public ConnectionStatusDto ConnectionStatus {
+        get => connectionStatus;
+        private set {
+            if (connectionStatus != value) {
+                connectionStatus = value;
+                OnPropertyChanged(nameof(ConnectionStatus));
+            }
+        }
+    }
+
+    #endregion
+
+    #region Constructor
 
     public EngineOrchestrator(
         IPresetService presetService,
         ISessionService sessionService,
-        IFlightDataProvider flightDataProvider,
+        ISimFlightDataProvider flightDataProvider,
         IFailureTrigger failureTrigger,
-        IFenixFailureDispatcher fenixDispatcher,
-        IFailureEngineSettings settings,
+        ISimulatorConnectionService simulatorService,
+        IOptions<FailureEngineSettings> settings,
         ILogger<EngineOrchestrator> logger) {
         _presetService = presetService;
         _sessionService = sessionService;
-        _flightDataProvider = flightDataProvider;
-        _fenixDispatcher = fenixDispatcher;
+        _simulatorConnectionService = simulatorService;
         _failureTrigger = failureTrigger;
-        _settings = settings;
+        _settings = settings.Value;
         _logger = logger;
     }
+    #endregion
 
     #region Public API
 
-    public async Task ActivatePresetAsync(int presetId, CancellationToken ct) {
-        _activePreset = await _presetService.GetByIdAsync(presetId, ct);
-        await ApplyScenarioPresetAsync(ct);
-        _logger.LogInformation("Preset {PresetId} loaded: {PresetName}", presetId, _activePreset?.Name);
-    }
-    public async Task DeactivatePresetAsync(CancellationToken ct) {
-        var id = _activePreset?.Id;
-        await ResetScenarioPresetAsync(ct);
-        _activePreset = null;
-        _logger.LogInformation("Preset {PresetId} unloaded", id);
-    }
+    #region UpdaterTimer
 
-    public async Task ToggleEngineAsync(bool isActive, CancellationToken ct) {
-        if (IsEngineActive == isActive) return;
+    public async Task StartAutomaticTimerAsync(CancellationToken ct) {
+        await _operationLock.WaitAsync(ct);
+        try {
+            if (IsTimerRunning)
+                return;
 
-        IsEngineActive = isActive;
+            _automaticTimerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            _automaticTimer = new PeriodicTimer(TimeSpan.FromSeconds(_settings.CheckConnectionIntervalSeconds));
+            IsTimerRunning = true;
 
-        if (!isActive) {
-            await StopEngineAsync(ct);
-            return;
+            _ = Task.Run(() => RunAutomaticTimerLoopAsync(_automaticTimerCts.Token), _automaticTimerCts.Token);
+        } finally {
+            _operationLock.Release();
         }
+    }
+    public async Task UpdateConnection(CancellationToken ct) {
+        ConnectionStatus = await _simulatorConnectionService.GetConnectionStatusAsync(ct);
+    }
+    // Nuevo método público
+    public async Task StopAutomaticTimerAsync(CancellationToken ct) {
+        await _operationLock.WaitAsync(ct);
+        try {
+            if (!IsTimerRunning)
+                return;
 
-        if (_activePreset == null) {
-            _logger.LogWarning("Cannot activate engine: no active preset.");
-            return;
+            _automaticTimerCts?.Cancel();
+            _automaticTimer?.Dispose();
+            _automaticTimer = null;
+            IsTimerRunning = false;
+        } finally {
+            _operationLock.Release();
         }
-
-        await StartEngineAsync(ct);
     }
 
-    public void SetPollingInterval(TimeSpan interval) {
-        if (interval <= TimeSpan.Zero)
-            throw new ArgumentException("Interval must be positive.", nameof(interval));
+    // Nuevo método privado
+    private async Task RunAutomaticTimerLoopAsync(CancellationToken ct) {
+        if (_automaticTimer == null) return;
 
-        _settings.CheckIntervalSeconds = (int)interval.TotalSeconds;
-        RestartPolling();
+        try {
+            while (await _automaticTimer.WaitForNextTickAsync(ct) && !ct.IsCancellationRequested) {
+                ConnectionStatus = await _simulatorConnectionService.GetConnectionStatusAsync(ct);
+            }
+        } catch (OperationCanceledException) {
+            _logger.LogInformation("Automatic timer loop canceled.");
+        } catch (Exception ex) {
+            _logger.LogError(ex, "Unexpected error in automatic timer loop.");
+        }
     }
 
-    public async Task<ConnectionStatusDto> GetConnectionStatusAsync(CancellationToken ct) {
-        var simConnected = await _flightDataProvider.IsConnectedAsync(ct);
-        var fenixConnected = await _fenixDispatcher.IsConnectedAsync(ct);
-        var phase = simConnected
-            ? await _flightDataProvider.GetCurrentFlightPhaseAsync(ct)
-            : FlightPhaseEnum.Unknown;
+    #endregion
 
-        return new ConnectionStatusDto(simConnected, fenixConnected, phase);
+
+    #region Realistic Mode
+
+    public async Task StartRealisticModeAsync(int presetId, CancellationToken ct) {
+        await _operationLock.WaitAsync(ct);
+        try {
+            if (!ConnectionStatus.IsSimConnectConnected || !ConnectionStatus.IsFenixConnected) {
+                _logger.LogInformation("Tried to start Realistic mode but there is a system disconnected: {@state}", connectionStatus);
+                return;
+            }
+            // Validar que no haya otro modo corriendo
+            if (IsEngineActive && CurrentMode != UserAppMode.None) {
+                _logger.LogInformation("Tried to start Realistic mode but another mode is already running");
+                return;
+            }
+
+            // Obtener el preset correspondiente al modo realista
+            _activePreset = await _presetService.GetByIdAsync(presetId, ct);
+            if (_activePreset == null) {
+                _logger.LogError("Failed to load preset for realistic mode {ModeType}", presetId);
+                return;
+            }
+
+            CurrentMode = UserAppMode.Realistic;
+
+            // Iniciar sesión
+            _activeSession = await _sessionService.StartSessionAsync(_activePreset.Id, ct);
+
+            // Iniciar el polling
+            StartPolling();
+
+            IsEngineActive = true;
+
+            // Notificar cambios
+            OnPropertyChanged(nameof(IsEngineActive));
+            OnPropertyChanged(nameof(CurrentMode));
+
+            _logger.LogInformation("Realistic mode {ModeType} started with polling interval: {Interval}s",
+                presetId, _settings.CheckIntervalSeconds);
+        } finally {
+            _operationLock.Release();
+        }
+    }
+
+    #endregion
+
+    #region Training
+
+    public async Task StartTrainingPresetAsync(int presetId, CancellationToken ct) {
+        await _operationLock.WaitAsync(ct);
+        try {
+            if (!ConnectionStatus.IsFenixConnected) {
+                _logger.LogInformation("Tried to start Training preset but Fenix is disconnected: {@state}", connectionStatus);
+                return;
+            }
+            // Validar que no haya otro modo corriendo
+            if (IsEngineActive && CurrentMode != UserAppMode.None) {
+                _logger.LogWarning("Cannot start training preset: another mode is already running");
+                return;
+            }
+
+            _activePreset = await _presetService.GetByIdAsync(presetId, ct);
+            if (_activePreset == null) {
+                _logger.LogError("Failed to load preset with ID {PresetId}", presetId);
+                return;
+            }
+
+            CurrentMode = UserAppMode.Training;
+
+            // Iniciar sesión
+            _activeSession = await _sessionService.StartSessionAsync(_activePreset.Id, ct);
+
+            // Aplicar el preset (solo armar, no activar)
+            await ApplyScenarioPresetAsync(ct);
+
+            IsEngineActive = true;
+
+            // Notificar cambios
+            OnPropertyChanged(nameof(IsEngineActive));
+            OnPropertyChanged(nameof(CurrentMode));
+
+            _logger.LogInformation("Training preset {PresetId} loaded: {PresetName}",
+                presetId, _activePreset.Name);
+        } finally {
+            _operationLock.Release();
+        }
+    }
+
+    #endregion
+
+    #region CustomPresets
+
+    public async Task StartCustomModeAsync(int presetId, bool activateImmediately, CancellationToken ct) {
+        await _operationLock.WaitAsync(ct);
+        try {
+            if (!ConnectionStatus.IsSimConnectConnected || !ConnectionStatus.IsFenixConnected) {
+                _logger.LogInformation("Tried to start Custom Preset but there is a system disconnected: {@state}", connectionStatus);
+                return;
+            }
+            // Validar que no haya otro modo corriendo
+            if (IsEngineActive && CurrentMode != UserAppMode.None) {
+                _logger.LogWarning("Cannot start custom mode: another mode is already running");
+                return;
+            }
+
+            _activePreset = await _presetService.GetByIdAsync(presetId, ct);
+            if (_activePreset == null) {
+                _logger.LogError("Failed to load preset with ID {PresetId}", presetId);
+                return;
+            }
+
+            CurrentMode = UserAppMode.Custom;
+
+            // Iniciar sesión
+            _activeSession = await _sessionService.StartSessionAsync(presetId, ct);
+
+            if (activateImmediately) {
+                // Activar todas las fallas inmediatamente
+                foreach (var def in _activePreset.PresetFailureDefinitions) {
+                    await _simulatorConnectionService.ExecuteFailureAsync(def, _activeSession, ct);
+
+                    var log = new FailureTriggerLogDto(
+                        DateTimeOffset.UtcNow,
+                        def.FenixFailureId,
+                        def.FenixFailure!.Name,
+                        (await _simulatorConnectionService.GetConnectionStatusAsync(ct)).CurrentFlightPhase,
+                        _activePreset.Name);
+                    _recentLogs.Add(log);
+                }
+
+                // Iniciar polling para modo custom activo
+                StartPolling();
+            } else {
+                // Solo armar las fallas (similar a modo entrenamiento)
+                await ApplyScenarioPresetAsync(ct);
+            }
+
+            IsEngineActive = true;
+
+            // Notificar cambios
+            OnPropertyChanged(nameof(IsEngineActive));
+            OnPropertyChanged(nameof(CurrentMode));
+
+            _logger.LogInformation("Custom mode started with {Count} failures. Activate immediately: {Activate}",
+                _activePreset.PresetFailureDefinitions.Count, activateImmediately);
+        } finally {
+            _operationLock.Release();
+        }
+    }
+
+    #endregion
+
+    public async Task StopCurrentModeAsync(CancellationToken ct) {
+        await _operationLock.WaitAsync(ct);
+        try {
+            if (!IsEngineActive || CurrentMode == UserAppMode.None) {
+                return;
+            }
+
+            StopPolling();
+
+            // Resetear todas las fallas en Fenix
+            await _simulatorConnectionService.ResetAllFailuresAsync(ct);
+
+            // Limpiar estado
+            _activePreset = null;
+            _activeSession = null;
+            _activeScenarioFailures.Clear();
+            CurrentMode = UserAppMode.None;
+            IsEngineActive = false;
+
+            // Notificar cambios
+            OnPropertyChanged(nameof(IsEngineActive));
+            OnPropertyChanged(nameof(CurrentMode));
+
+            _logger.LogInformation("Engine stopped and failures reset.");
+        } finally {
+            _operationLock.Release();
+        }
     }
 
     public Task<List<FailureTriggerLogDto>> GetRecentFailuresAsync(CancellationToken ct) {
         return Task.FromResult(_recentLogs.OrderByDescending(x => x.TriggeredAtUtc).Take(100).ToList());
     }
 
+    public Task<bool> IsPresetArmedAsync(CancellationToken ct) {
+        // En modo entrenamiento, verificar si el preset está armado
+        if (CurrentMode == UserAppMode.Training && _activePreset != null) {
+            // Aquí deberías implementar la lógica específica para verificar
+            // si las fallas del preset están armadas en Fenix
+            // Por ahora retornamos true si hay un preset activo
+            return Task.FromResult(true);
+        }
+
+        return Task.FromResult(false);
+    }
+
     #endregion
 
     #region Internal Logic
 
-    private async Task StartEngineAsync(CancellationToken ct) {
-        if (_activePreset == null) return;
-
-        if (_activePreset.PresetType == PresetTypeEnum.RealisticMode)
-            await StartRealisticModeAsync(ct);
-        else
-            await ApplyScenarioPresetAsync(ct);
-
-    }
-
-    private async Task StopEngineAsync(CancellationToken ct) {
-        if (_activePreset == null) return;
-        if (_activePreset.PresetType == PresetTypeEnum.RealisticMode)
-            StopPolling();
-        else
-            await ResetScenarioPresetAsync(ct);
-
-
-        _activeSession = null;
-        _activeScenarioFailures.Clear();
-        await _fenixDispatcher.ResetAllFailuresAsync(ct);
-        _logger.LogInformation("Engine stopped and failures reset.");
-    }
-
     private async Task ApplyScenarioPresetAsync(CancellationToken ct) {
-        if (_activePreset == null) return;
+        if (_activePreset == null || _activeSession == null) return;
 
-        _activeSession = await _sessionService.StartSessionAsync(_activePreset.Id, ct);
+        var armedFailures = await _simulatorConnectionService.ExecutePresetAsync(_activePreset, _activeSession, ct);
 
-        await _fenixDispatcher.ExecutePresetAsync(_activePreset, _activeSession, ct);
-
-        foreach (var def in _activePreset.PresetFailureDefinitions) {
-            var log = new FailureTriggerLogDto(DateTimeOffset.UtcNow, def.FenixFailureId, def.FenixFailure!.Name, def.Preset!.FlightPhase, _activePreset.Name);
+        foreach (var def in armedFailures) {
+            var log = new FailureTriggerLogDto(
+                DateTimeOffset.UtcNow,
+                def.FenixFailureId,
+                def.FenixFailure!.Name,
+                def.Preset!.FlightPhase,
+                _activePreset.Name);
             _recentLogs.Add(log);
         }
-
-    }
-
-    private async Task ResetScenarioPresetAsync(CancellationToken ct) {
-        await _fenixDispatcher.ResetAllFailuresAsync(ct);
-        _activeScenarioFailures.Clear();
-    }
-
-    private async Task StartRealisticModeAsync(CancellationToken ct) {
-        _activeSession = await _sessionService.StartSessionAsync(_activePreset!.Id, ct);
-        StartPolling();
-        _logger.LogInformation("Realistic mode started with polling interval: {Interval}s", _settings.CheckIntervalSeconds);
     }
 
     private void StartPolling() {
         StopPolling();
-        _timer = new PeriodicTimer(TimeSpan.FromSeconds(_settings.CheckIntervalSeconds));
-        _ = Task.Run(RunPollingLoopAsync, _cts.Token);
+        _realisticEngineTimer = new PeriodicTimer(TimeSpan.FromSeconds(_settings.CheckIntervalSeconds));
+        _ = Task.Run(RunPollingLoopAsync, _realisticEngineCts.Token);
     }
 
     private void StopPolling() {
-        _timer?.Dispose();
-        _timer = null;
-    }
-
-    private void RestartPolling() {
-        if (IsEngineActive && _activePreset?.PresetType == PresetTypeEnum.RealisticMode) {
-            StartPolling();
-        }
+        _realisticEngineTimer?.Dispose();
+        _realisticEngineTimer = null;
     }
 
     private async Task RunPollingLoopAsync() {
-        if (_timer == null) return;
+        if (_realisticEngineTimer == null) return;
 
         try {
             // Ejecutar primer tick inmediato
-            await PollAndTriggerAsync(_cts.Token);
+            await PollAndTriggerAsync(_realisticEngineCts.Token);
 
-            while (await _timer.WaitForNextTickAsync(_cts.Token) && !_cts.Token.IsCancellationRequested) {
-                await PollAndTriggerAsync(_cts.Token);
+            while (await _realisticEngineTimer.WaitForNextTickAsync(_realisticEngineCts.Token) && !_realisticEngineCts.Token.IsCancellationRequested) {
+                await PollAndTriggerAsync(_realisticEngineCts.Token);
             }
         } catch (OperationCanceledException) {
             _logger.LogInformation("Polling loop canceled.");
@@ -186,48 +406,71 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
         }
     }
 
-    public async Task PollAndTriggerAsync(CancellationToken ct) {
-        if (!IsEngineActive || _activePreset?.PresetType == PresetTypeEnum.RealisticMode || _activeSession == null)
+    private async Task PollAndTriggerAsync(CancellationToken ct) {
+        if (!IsEngineActive || _activePreset == null || _activeSession == null)
             return;
 
-        if (!await _fenixDispatcher.IsConnectedAsync(ct))
+        if (!connectionStatus.IsSimConnectConnected || !connectionStatus.IsFenixConnected)
             return;
 
-        await _pollingLock.WaitAsync(ct);
+        await _operationLock.WaitAsync(ct);
         try {
-            var phase = await _flightDataProvider.GetCurrentFlightPhaseAsync(ct);
-            var trigger = _failureTrigger.TryTriggerFailure(_activePreset!, phase, _settings.GlobalProbability, DateTimeOffset.UtcNow);
+            var phase = connectionStatus.CurrentFlightPhase;
 
-            if (trigger == null) return;
+            if (CurrentMode == UserAppMode.Realistic) {
+                // En modo realista, usar el motor de probabilidad para activar fallas
+                var trigger = _failureTrigger.TryTriggerFailure(
+                    _activePreset,
+                    phase,
+                    0.2,
+                    DateTimeOffset.UtcNow);
 
-            trigger.FlightSessionId = _activeSession.Id;
+                if (trigger != null) {
+                    trigger.FlightSessionId = _activeSession.Id;
 
-            var failureDef = _activePreset!.PresetFailureDefinitions
-                .FirstOrDefault(x => x.FenixFailure?.FenixFailureId == trigger.FenixFailureId);
+                    var failureDef = _activePreset.PresetFailureDefinitions
+                        .FirstOrDefault(x => x.FenixFailure?.FenixFailureId == trigger.FenixFailureId);
 
-            if (failureDef?.FenixFailure == null) return;
+                    if (failureDef?.FenixFailure != null) {
+                        await _simulatorConnectionService.ExecuteFailureAsync(failureDef, _activeSession, ct);
 
-            await _fenixDispatcher.ExecuteFailureAsync(failureDef, _activeSession, ct);
-            //await _triggeredFailureRepository.AddAsync(trigger, ct);
-            //await _triggeredFailureRepository.SaveChangesAsync(ct);
+                        var log = new FailureTriggerLogDto(
+                            trigger.TriggeredAtUtc,
+                            failureDef.FenixFailureId,
+                            failureDef.FenixFailure.Name,
+                            phase,
+                            _activePreset.Name);
+                        _recentLogs.Add(log);
 
-            var log = new FailureTriggerLogDto(trigger.TriggeredAtUtc, failureDef.FenixFailureId, failureDef.FenixFailure.Name, phase, _activePreset.Name);
-            _recentLogs.Add(log);
-
-            _logger.LogInformation("Triggered random failure: {FailureName} at phase {Phase}", failureDef.FenixFailure.Name, phase);
+                        _logger.LogInformation("Triggered random failure: {FailureName} at phase {Phase}",
+                            failureDef.FenixFailure.Name, phase);
+                    }
+                }
+            } else if (CurrentMode == UserAppMode.Custom && _activePreset.PresetType == PresetTypeEnum.Custom) {
+                // En modo custom activo, podrías implementar lógica específica aquí
+                // Por ahora dejamos que el polling continúe pero sin acción adicional
+            }
         } catch (Exception ex) {
             _logger.LogError(ex, "Error while polling for failure triggers.");
         } finally {
-            _pollingLock.Release();
+            _operationLock.Release();
         }
     }
 
     #endregion
 
+    #region INotifyPropertyChanged
+
+    protected virtual void OnPropertyChanged(string propertyName) {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    #endregion
+
     public void Dispose() {
-        _cts.Cancel();
-        _timer?.Dispose();
-        _pollingLock.Dispose();
-        _cts.Dispose();
+        _realisticEngineCts.Cancel();
+        _realisticEngineTimer?.Dispose();
+        _operationLock.Dispose();
+        _realisticEngineCts.Dispose();
     }
 }

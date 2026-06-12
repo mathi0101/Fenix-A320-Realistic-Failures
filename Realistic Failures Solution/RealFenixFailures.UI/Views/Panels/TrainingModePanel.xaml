@@ -53,7 +53,8 @@
             <Setter Property="Foreground" Value="#0F1720" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Difficulty}" Value="Easy">
-                    <Setter Property="Foreground" Value="#FFFFFFFF" />
+                    <!--<Setter Property="Foreground" Value="#FFFFFFFF" />-->
+                    <Setter Property="Foreground" Value="#0F1720" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -74,7 +75,7 @@
                        TextWrapping="Wrap" Margin="0,6,0,0"/>
         </StackPanel>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden">
             <ItemsControl ItemsSource="{Binding TrainingScenarios}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -90,22 +91,26 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Brush.Text.Primary}"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0">
+                                        <!-- Difficulty tag: usa estilos definidos -->
+                                        <Border Style="{StaticResource TagBorderStyle}" >
+                                            <TextBlock Text="{Binding Difficulty}" Style="{StaticResource TagTextStyle}" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource Brush.Text.Primary}" Margin="10,0"/>
+                                        <!-- Phase tag  -->
+                                        <Border Background="#1A2540" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                            <TextBlock Text="{Binding Phase}" FontSize="10" Foreground="{StaticResource Brush.Accent.Blue.Primary}"/>
+                                        </Border>
+                                    </StackPanel>
+                                    
                                     <TextBlock Text="{Binding Description}" FontSize="11"
                                                Foreground="{StaticResource Brush.Text.Secondary}"
                                                TextWrapping="Wrap" Margin="0,3,0,0"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                        <!-- Phase tag (mantengo su estilo) -->
-                                        <Border Background="#1A2540" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
-                                            <TextBlock Text="{Binding Phase}" FontSize="10"
-                                                       Foreground="{StaticResource Brush.Accent.Blue.Primary}"/>
-                                        </Border>
+                                       
 
-                                        <!-- Difficulty tag: usa estilos definidos -->
-                                        <Border Style="{StaticResource TagBorderStyle}" Margin="0,0,0,0">
-                                            <TextBlock Text="{Binding Difficulty}" Style="{StaticResource TagTextStyle}" />
-                                        </Border>
+                                       
                                     </StackPanel>
                                 </StackPanel>
                                 <TextBlock Grid.Column="1" Text="▶" FontSize="14"

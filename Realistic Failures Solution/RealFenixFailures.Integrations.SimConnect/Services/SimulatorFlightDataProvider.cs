@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Domain.Enums;
 using RealFenixFailures.Integrations.SimConnect.Interfaces;
@@ -5,23 +6,49 @@ using RealFenixFailures.Integrations.SimConnect.Models;
 
 namespace RealFenixFailures.Integrations.SimConnect.Services;
 
-public class SimConnectFlightDataProvider : IFlightDataProvider {
+public class SimulatorFlightDataProvider : ISimFlightDataProvider {
     private readonly ISimConnectClient _client;
+    private readonly ILogger<SimulatorFlightDataProvider> _logger;
+    private readonly SemaphoreSlim _healthLock = new(1, 1);
 
-    public SimConnectFlightDataProvider(ISimConnectClient client) {
+    private DateTimeOffset _lastHealthCheckAtUtc = DateTimeOffset.MinValue;
+    private bool _lastHealthCheckResult;
+
+    public SimulatorFlightDataProvider(ISimConnectClient client, ILogger<SimulatorFlightDataProvider> logger) {
         _client = client;
+        _logger = logger;
     }
 
-    public Task<bool> IsConnectedAsync(CancellationToken cancellationToken) {
-        return _client.IsConnectedAsync(cancellationToken);
+    public async Task<bool> IsConnectedAsync(CancellationToken ct) {
+        var intervalSeconds = Math.Max(1, 10);
+        var now = DateTimeOffset.UtcNow;
+
+        if (now - _lastHealthCheckAtUtc < TimeSpan.FromSeconds(intervalSeconds)) {
+            return _lastHealthCheckResult;
+        }
+
+        await _healthLock.WaitAsync(ct);
+        try {
+            now = DateTimeOffset.UtcNow;
+            if (now - _lastHealthCheckAtUtc < TimeSpan.FromSeconds(intervalSeconds)) {
+                return _lastHealthCheckResult;
+            }
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            var isAlive = await _client.IsConnectedAsync(cts.Token);
+            UpdateHealthState(isAlive);
+            return _lastHealthCheckResult;
+        } finally {
+            _healthLock.Release();
+        }
     }
 
-    public async Task<FlightPhaseEnum> GetCurrentFlightPhaseAsync(CancellationToken cancellationToken) {
-        var state = await _client.GetAircraftStateAsync(cancellationToken);
+    public async Task<FlightPhaseEnum> GetCurrentFlightPhaseAsync(CancellationToken ct) {
+        var state = await _client.GetAircraftStateAsync(ct);
         return DetermineFlightPhase(state);
     }
 
     private FlightPhaseEnum DetermineFlightPhase(SimAircraftState state) {
+        _logger.LogDebug("SimAircraftState: {@state}", state);
         // Determinar la fase de vuelo basada en los datos
         if (state.IsOnGround) {
             // En tierra - determinar si es taxi, takeoff o shutdown
@@ -67,23 +94,8 @@ public class SimConnectFlightDataProvider : IFlightDataProvider {
         }
     }
 
-    public async Task<double> GetCurrentAltitudeAsync(CancellationToken cancellationToken) {
-        var state = await _client.GetAircraftStateAsync(cancellationToken);
-        return state.Altitude;
-    }
-
-    public async Task<double> GetCurrentAirspeedAsync(CancellationToken cancellationToken) {
-        var state = await _client.GetAircraftStateAsync(cancellationToken);
-        return state.AirspeedTrue;
-    }
-
-    public async Task<bool> IsOnGroundAsync(CancellationToken cancellationToken) {
-        var state = await _client.GetAircraftStateAsync(cancellationToken);
-        return state.IsOnGround;
-    }
-
-    public async Task<SimAircraftContext> GetAircraftContextAsync(CancellationToken cancellationToken) {
-        var state = await _client.GetAircraftStateAsync(cancellationToken);
+    public async Task<SimAircraftContext> GetAircraftContextAsync(CancellationToken ct) {
+        var state = await _client.GetAircraftStateAsync(ct);
 
         return new SimAircraftContext {
             FlightPhase = DetermineFlightPhase(state),
@@ -97,5 +109,10 @@ public class SimConnectFlightDataProvider : IFlightDataProvider {
             RadioHeight = state.RadioHeight,
             EnginesRunning = (state.Engine1Running ? 1 : 0) + (state.Engine2Running ? 1 : 0)
         };
+    }
+
+    private void UpdateHealthState(bool isAvailable) {
+        _lastHealthCheckResult = isAvailable;
+        _lastHealthCheckAtUtc = DateTimeOffset.UtcNow;
     }
 }

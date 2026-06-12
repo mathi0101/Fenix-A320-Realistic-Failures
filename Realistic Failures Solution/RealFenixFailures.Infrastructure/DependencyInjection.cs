@@ -2,11 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Domain.Interfaces;
 using RealFenixFailures.Domain.Interfaces.Repositories;
 using RealFenixFailures.Domain.Services;
-using RealFenixFailures.Infrastructure.Configuration;
 using RealFenixFailures.Infrastructure.Persistence;
 using RealFenixFailures.Infrastructure.Repositories;
 using RealFenixFailures.Infrastructure.Services;
@@ -27,7 +25,6 @@ public static class DependencyInjection {
 #endif
         });
         services.Configure<FailureEngineSettings>(configuration.GetSection(FailureEngineSettings.SectionName));
-        services.AddScoped<IFailureEngineSettings, FailureEngineSettingsProvider>();
 
         services.AddScoped<IFenixFailureDefinitionRepository, FenixFailureDefinitionRepository>();
         services.AddScoped<IPresetRepository, PresetRepository>();

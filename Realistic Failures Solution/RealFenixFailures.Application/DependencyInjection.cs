@@ -11,6 +11,7 @@ public static class DependencyInjection {
         services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<IEngineOrchestrator, EngineOrchestrator>();
         services.AddScoped<IInitializerService, InitializerService>();
+        services.AddSingleton<ISimulatorConnectionService, SimulatorConnectionService>();
         return services;
     }
 }

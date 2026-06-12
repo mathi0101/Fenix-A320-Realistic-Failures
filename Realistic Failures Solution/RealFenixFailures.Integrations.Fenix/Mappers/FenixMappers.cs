@@ -1,4 +1,5 @@
-﻿using RealFenixFailures.Domain.DTOs;
+﻿using RealFenixFailures.Application.DTOs;
+using RealFenixFailures.Domain.DTOs;
 using RealFenixFailures.Integrations.Fenix.Models;
 
 namespace RealFenixFailures.Integrations.Fenix.Mappers;
@@ -17,5 +18,11 @@ internal static class FenixMappers {
                     ).ToList())
                 )]
         };
+    }
+    internal static FenixSaveManualRequest ToFenixSaveManualRequest(this FenixArmFailureRequest rq) {
+        return new FenixSaveManualRequest(rq.Id, rq.Failed, rq.FailureCondition?.ToFenixFailureConditionRequest());
+    }
+    internal static FenixFailureConditionRequest ToFenixFailureConditionRequest(this FenixArmFailureConditionRequest rq) {
+        return new FenixFailureConditionRequest { Ias = rq.Ias, Alt = rq.Alt, Altb = rq.Altb, Time = rq.Time, AfterEvent = rq.AfterEvent, AfterEventSeconds = rq.AfterEventSeconds };
     }
 }

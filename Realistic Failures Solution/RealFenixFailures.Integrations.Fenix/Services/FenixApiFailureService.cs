@@ -1,13 +1,16 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using RealFenixFailures.Application.DTOs;
+using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Domain.DTOs;
 using RealFenixFailures.Domain.Interfaces;
 using RealFenixFailures.Integrations.Fenix.Interfaces;
+using RealFenixFailures.Integrations.Fenix.Mappers;
 using RealFenixFailures.Integrations.Fenix.Models;
 
 namespace RealFenixFailures.Integrations.Fenix.Services;
 
-public class FenixApiFailureService : IFenixApiFailureService {
+public class FenixApiFailureService : IFenixFailureApiDispatcher {
     private readonly IFenixApiClient _apiClient;
     private readonly IFenixStreamFailuresReaderService _jsonReader;
     private readonly IOptionsMonitor<FenixApiOptions> _optionsMonitor;
@@ -27,8 +30,12 @@ public class FenixApiFailureService : IFenixApiFailureService {
 
     #region Minimal
 
-    public async Task<bool> ArmFailureAsync(FenixSaveManualRequest def, CancellationToken ct) {
-        using var stream = await _apiClient.SendFailureAsync(def, ct);
+    public async Task<bool> ArmFailureAsync(FenixArmFailureRequest def, CancellationToken ct) {
+        _logger.LogDebug("ArmFailure Request: {@def}", def);
+        FenixSaveManualRequest rq = def.ToFenixSaveManualRequest();
+        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_optionsMonitor.CurrentValue.HealthCheckTimeout));
+        using var stream = await _apiClient.SendFailureAsync(rq, cts.Token);
+        _logger.LogDebug("ArmFailure Response: {@stream}", stream);
         bool httpOk = stream is not null;
         UpdateHealthState(httpOk);
         return httpOk;
@@ -39,7 +46,8 @@ public class FenixApiFailureService : IFenixApiFailureService {
 
     public async Task<AllFenixFailuresResponseDto> GetAllFailuresAsync(CancellationToken ct) {
         try {
-            using (var stream = await _apiClient.GetManualFailuresAsync(ct)) {
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_optionsMonitor.CurrentValue.HealthCheckTimeout));
+            using (var stream = await _apiClient.GetManualFailuresAsync(cts.Token)) {
                 if (stream is null) {
                     UpdateHealthState(false);
                     return new AllFenixFailuresResponseDto();
@@ -62,7 +70,8 @@ public class FenixApiFailureService : IFenixApiFailureService {
         if (activeFailures.Count > 0) {
             _logger.LogInformation("Resetting {Count} active Fenix failures.", activeFailures.Count);
             foreach (var activeFailure in activeFailures) {
-                await _apiClient.SendFailureAsync(new FenixSaveManualRequest(activeFailure.FenixId, false, null), ct);
+                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_optionsMonitor.CurrentValue.HealthCheckTimeout));
+                await _apiClient.SendFailureAsync(new FenixSaveManualRequest(activeFailure.FenixId, false, null), cts.Token);
             }
         }
 

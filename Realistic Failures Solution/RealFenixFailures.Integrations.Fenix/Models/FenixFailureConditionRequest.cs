@@ -1,6 +1,6 @@
 ﻿namespace RealFenixFailures.Integrations.Fenix.Models;
 
-public class FenixFailureConditionRequest {
+public sealed record FenixFailureConditionRequest {
     public int? Ias { get; set; }
     public int? Alt { get; set; }
     public int? Altb { get; set; }
