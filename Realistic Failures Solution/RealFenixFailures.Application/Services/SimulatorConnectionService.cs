@@ -44,7 +44,7 @@ public class SimulatorConnectionService : ISimulatorConnectionService {
         return _fenixFailureApiDispatcher.ResetAllFailuresAsync(ct);
     }
 
-    public async Task<IReadOnlyList<PresetFailureDefinition>> ExecutePresetAsync(FailurePreset preset, FlightSession session, CancellationToken ct) {
+    public async Task<ServiceResult<IReadOnlyList<PresetFailureDefinition>>> ExecutePresetAsync(FailurePreset preset, FlightSession session, CancellationToken ct) {
         List<PresetFailureDefinition> response = [];
         var triggered = _failureTrigger.GetTriggeredPresetFailures(preset);
         foreach (var def in triggered) {
@@ -63,13 +63,13 @@ public class SimulatorConnectionService : ISimulatorConnectionService {
             } catch (Exception ex) {
                 _logger.LogError(ex, "Failed to apply scenario failure: {FailureName}", def.FenixFailure!.Name);
                 await ResetAllFailuresAsync(ct);
-                return [];
+                return ServiceResult<IReadOnlyList<PresetFailureDefinition>>.Fail(ex);
             }
         }
 
         await _triggeredFailureRepository.SaveChangesAsync(ct);
         _logger.LogInformation("Applied preset failure: {PresetName}", preset.Name);
-        return response;
+        return ServiceResult<IReadOnlyList<PresetFailureDefinition>>.Ok(response);
     }
     public async Task<bool> ExecuteFailureAsync(PresetFailureDefinition fd, FlightSession session, CancellationToken ct) {
         if (fd is null) return false;

@@ -12,6 +12,7 @@ using System.ComponentModel;
 namespace RealFenixFailures.Application.Services;
 
 public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
+
     #region Fields
 
     private readonly IPresetService _presetService;
@@ -161,7 +162,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
     #endregion
 
-
     #region Realistic Mode
 
     public async Task StartRealisticModeAsync(int presetId, CancellationToken ct) {
@@ -184,7 +184,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 return;
             }
 
-            CurrentMode = UserAppMode.Realistic;
 
             // Iniciar sesión
             _activeSession = await _sessionService.StartSessionAsync(_activePreset.Id, ct);
@@ -192,11 +191,8 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
             // Iniciar el polling
             StartPolling();
 
+            CurrentMode = UserAppMode.Realistic;
             IsEngineActive = true;
-
-            // Notificar cambios
-            OnPropertyChanged(nameof(IsEngineActive));
-            OnPropertyChanged(nameof(CurrentMode));
 
             _logger.LogInformation("Realistic mode {ModeType} started with polling interval: {Interval}s",
                 presetId, _settings.CheckIntervalSeconds);
@@ -228,19 +224,29 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 return;
             }
 
-            CurrentMode = UserAppMode.Training;
 
             // Iniciar sesión
             _activeSession = await _sessionService.StartSessionAsync(_activePreset.Id, ct);
 
-            // Aplicar el preset (solo armar, no activar)
-            await ApplyScenarioPresetAsync(ct);
+            var armedFailures = await _simulatorConnectionService.ExecutePresetAsync(_activePreset, _activeSession, ct);
 
+            if (!armedFailures.IsSuccess) {
+                _recentLogs.Add(new FailureTriggerLogDto(DateTime.UtcNow, "", "Error al activar preset", _activePreset.FlightPhase, _activePreset.Name));
+                return;
+            }
+
+            foreach (var def in armedFailures.Value!) {
+                var log = new FailureTriggerLogDto(
+                    DateTime.UtcNow,
+                    def.FenixFailureId,
+                    def.FenixFailure!.Name,
+                    def.Preset!.FlightPhase,
+                    _activePreset.Name);
+                _recentLogs.Add(log);
+            }
+
+            CurrentMode = UserAppMode.Training;
             IsEngineActive = true;
-
-            // Notificar cambios
-            OnPropertyChanged(nameof(IsEngineActive));
-            OnPropertyChanged(nameof(CurrentMode));
 
             _logger.LogInformation("Training preset {PresetId} loaded: {PresetName}",
                 presetId, _activePreset.Name);
@@ -272,7 +278,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 return;
             }
 
-            CurrentMode = UserAppMode.Custom;
 
             // Iniciar sesión
             _activeSession = await _sessionService.StartSessionAsync(presetId, ct);
@@ -295,14 +300,26 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 StartPolling();
             } else {
                 // Solo armar las fallas (similar a modo entrenamiento)
-                await ApplyScenarioPresetAsync(ct);
+                var armedFailures = await _simulatorConnectionService.ExecutePresetAsync(_activePreset, _activeSession, ct);
+
+                if (!armedFailures.IsSuccess) {
+                    _recentLogs.Add(new FailureTriggerLogDto(DateTime.UtcNow, "", "Error al activar preset", _activePreset.FlightPhase, _activePreset.Name));
+                    return;
+                }
+
+                foreach (var def in armedFailures.Value!) {
+                    var log = new FailureTriggerLogDto(
+                        DateTime.UtcNow,
+                        def.FenixFailureId,
+                        def.FenixFailure!.Name,
+                        def.Preset!.FlightPhase,
+                        _activePreset.Name);
+                    _recentLogs.Add(log);
+                }
             }
 
+            CurrentMode = UserAppMode.Custom;
             IsEngineActive = true;
-
-            // Notificar cambios
-            OnPropertyChanged(nameof(IsEngineActive));
-            OnPropertyChanged(nameof(CurrentMode));
 
             _logger.LogInformation("Custom mode started with {Count} failures. Activate immediately: {Activate}",
                 _activePreset.PresetFailureDefinitions.Count, activateImmediately);
@@ -329,12 +346,9 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
             _activePreset = null;
             _activeSession = null;
             _activeScenarioFailures.Clear();
+
             CurrentMode = UserAppMode.None;
             IsEngineActive = false;
-
-            // Notificar cambios
-            OnPropertyChanged(nameof(IsEngineActive));
-            OnPropertyChanged(nameof(CurrentMode));
 
             _logger.LogInformation("Engine stopped and failures reset.");
         } finally {
@@ -361,22 +375,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
     #endregion
 
     #region Internal Logic
-
-    private async Task ApplyScenarioPresetAsync(CancellationToken ct) {
-        if (_activePreset == null || _activeSession == null) return;
-
-        var armedFailures = await _simulatorConnectionService.ExecutePresetAsync(_activePreset, _activeSession, ct);
-
-        foreach (var def in armedFailures) {
-            var log = new FailureTriggerLogDto(
-                DateTimeOffset.UtcNow,
-                def.FenixFailureId,
-                def.FenixFailure!.Name,
-                def.Preset!.FlightPhase,
-                _activePreset.Name);
-            _recentLogs.Add(log);
-        }
-    }
 
     private void StartPolling() {
         StopPolling();

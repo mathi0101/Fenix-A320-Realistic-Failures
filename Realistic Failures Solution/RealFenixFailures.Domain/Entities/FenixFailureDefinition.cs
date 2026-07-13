@@ -1,7 +1,9 @@
 using RealFenixFailures.Domain.Enums;
+using System.Diagnostics;
 
 namespace RealFenixFailures.Domain.Entities;
 
+[DebuggerDisplay("{FenixFailureId} | Severity: {Severity}")]
 public class FenixFailureDefinition {
     public string FenixFailureId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;

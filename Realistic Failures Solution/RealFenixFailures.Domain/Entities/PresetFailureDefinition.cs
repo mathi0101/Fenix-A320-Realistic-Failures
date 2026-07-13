@@ -1,5 +1,8 @@
+using System.Diagnostics;
+
 namespace RealFenixFailures.Domain.Entities;
 
+[DebuggerDisplay("{FenixFailureId} | Group: {ProbabilityGroup} | Prob: {Probability}")]
 public class PresetFailureDefinition {
     public int PresetId { get; set; }
     public required string FenixFailureId { get; set; } = string.Empty;
