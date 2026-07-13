@@ -17,7 +17,7 @@ public interface IEngineOrchestrator : INotifyPropertyChanged {
     bool IsTimerRunning { get; }
 
     // Métodos para controlar el motor de fallas
-    Task StartRealisticModeAsync(int presetId, CancellationToken ct);
+    Task StartRealisticModeAsync(RiskLevel risk, CancellationToken ct);
     Task StartTrainingPresetAsync(int presetId, CancellationToken ct);
     Task StartCustomModeAsync(int presetId, bool activateImmediately, CancellationToken ct);
 

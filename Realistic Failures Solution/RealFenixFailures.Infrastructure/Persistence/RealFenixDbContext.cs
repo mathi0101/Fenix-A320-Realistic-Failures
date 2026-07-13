@@ -15,6 +15,9 @@ public class RealFenixDbContext : DbContext {
     public DbSet<PresetFailureDefinition> PresetFailureDefinitions => Set<PresetFailureDefinition>();
     public DbSet<FlightSession> FlightSessions => Set<FlightSession>();
     public DbSet<TriggeredFailure> TriggeredFailures => Set<TriggeredFailure>();
+    public DbSet<UserAircraft> UserAircrafts => Set<UserAircraft>();
+    public DbSet<AircraftWearableSystem> AircraftWearableSystems => Set<AircraftWearableSystem>();
+    public DbSet<AircraftSystemWear> AircraftSystemWears => Set<AircraftSystemWear>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
 
@@ -23,6 +26,48 @@ public class RealFenixDbContext : DbContext {
         modelBuilder.Entity<PresetType>(entity => {
             entity.HasKey(p => p.Id);
             entity.Property(p => p.Description).HasMaxLength(200).IsRequired();
+        });
+
+        #endregion
+
+        #region Aircraft & Wear Systems
+
+        modelBuilder.Entity<UserAircraft>(entity => {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Registration).HasMaxLength(10).IsRequired();
+            entity.HasIndex(x => x.Registration).IsUnique();
+            entity.Property(x => x.IcaoTypeCode).HasMaxLength(10).IsRequired();
+            entity.HasMany(x => x.SystemWears)
+                  .WithOne(w => w.UserAircraft)
+                  .HasForeignKey(w => w.UserAircraftId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(x => x.FlightSessions)
+                  .WithOne(f => f.UserAircraft)
+                  .HasForeignKey(f => f.UserAircraftId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AircraftWearableSystem>(entity => {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.ShortName).HasMaxLength(20).IsRequired();
+            entity.HasMany(x => x.Wears)
+                  .WithOne(w => w.WearableSystem)
+                  .HasForeignKey(w => w.WearableSystemId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AircraftSystemWear>(entity => {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.UserAircraftId, x.WearableSystemId }).IsUnique();
+            entity.HasOne(x => x.UserAircraft)
+                  .WithMany(a => a.SystemWears)
+                  .HasForeignKey(x => x.UserAircraftId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.WearableSystem)
+                  .WithMany(s => s.Wears)
+                  .HasForeignKey(x => x.WearableSystemId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         #endregion
@@ -101,7 +146,7 @@ public class RealFenixDbContext : DbContext {
 
         modelBuilder.Entity<FlightSession>(entity => {
             entity.HasKey(x => x.Id);
-            entity.HasOne(x => x.Preset).WithMany().HasForeignKey(x => x.PresetId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.UserAircraft).WithMany(a => a.FlightSessions).HasForeignKey(x => x.UserAircraftId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<TriggeredFailure>(entity => {

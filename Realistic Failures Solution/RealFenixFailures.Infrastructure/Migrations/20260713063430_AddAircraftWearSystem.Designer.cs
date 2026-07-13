@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RealFenixFailures.Infrastructure.Persistence;
 
@@ -10,9 +11,11 @@ using RealFenixFailures.Infrastructure.Persistence;
 namespace RealFenixFailures.Infrastructure.Migrations
 {
     [DbContext(typeof(RealFenixDbContext))]
-    partial class RealFenixDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260713063430_AddAircraftWearSystem")]
+    partial class AddAircraftWearSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
@@ -244,6 +247,9 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("PresetId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("RiskLevel")
                         .HasColumnType("INTEGER");
 
@@ -254,6 +260,8 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PresetId");
 
                     b.HasIndex("UserAircraftId");
 
@@ -462,10 +470,18 @@ namespace RealFenixFailures.Infrastructure.Migrations
 
             modelBuilder.Entity("RealFenixFailures.Domain.Entities.FlightSession", b =>
                 {
+                    b.HasOne("RealFenixFailures.Domain.Entities.FailurePreset", "Preset")
+                        .WithMany()
+                        .HasForeignKey("PresetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("RealFenixFailures.Domain.Entities.UserAircraft", "UserAircraft")
                         .WithMany("FlightSessions")
                         .HasForeignKey("UserAircraftId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Preset");
 
                     b.Navigation("UserAircraft");
                 });

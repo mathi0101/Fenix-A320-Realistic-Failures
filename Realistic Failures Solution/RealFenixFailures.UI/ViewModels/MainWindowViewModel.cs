@@ -372,6 +372,8 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
             OnPropertyChanged(nameof(FenixDotColor));
             OnPropertyChanged(nameof(SimConnectStatusBrush));
             OnPropertyChanged(nameof(FenixStatusBrush));
+
+            OnPropertyChanged(nameof(CanStartEngine));
         }
     }
 
@@ -469,17 +471,7 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
 
         if (IsAnyModeActive) return;
 
-        // Try to get realistic preset(s) from the preset service (adapt if your service differs)
-        var realisticPresets = await _presetService.GetRealisticPresetsAsync(CancellationToken.None); // returns list
-        var realisticPreset = realisticPresets?.FirstOrDefault();
-        if (realisticPreset is null) {
-            _logger.LogWarning("No realistic preset found. Please provide a Realistic-mode preset in presets.");
-            return;
-        }
-
-        // En modo realista, necesitamos determinar qué tipo de modo realista usar
-        // Por ahora usamos un valor por defecto, pero podría venir de la UI
-        await _orchestrator.StartRealisticModeAsync(realisticPreset.Id, CancellationToken.None);
+        await _orchestrator.StartRealisticModeAsync(RiskLevel.Moderate, CancellationToken.None);
 
         ActiveMode = UserAppMode.Realistic;
         _logger.LogInformation("Realistic mode activated (orchestrator handles polling/triggers).");
@@ -530,7 +522,7 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
         LogEntries.Clear();
         foreach (var item in logs?.OrderByDescending(x => x.TriggeredAtUtc).Take(50) ?? Enumerable.Empty<FailureTriggerLogDto>()) {
             // Assumes DTO has these properties; adapt formatting to actual DTO
-            LogEntries.Add($"{item.TriggeredAtUtc:HH:mm:ss}  {item.FlightPhase,-12}  {item.FailureName}");
+            LogEntries.Add($"{item.TriggeredAtUtc:HH:mm:ss} {item.FlightPhase,-12} {item.FailureName}");
         }
     }
 

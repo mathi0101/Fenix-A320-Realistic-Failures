@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Domain.Interfaces;
 using RealFenixFailures.Domain.Interfaces.Repositories;
 using RealFenixFailures.Domain.Services;
@@ -33,6 +34,7 @@ public static class DependencyInjection {
 
         services.AddScoped<IFailuresPersistenceService, FailuresPersistenceService>();
         services.AddScoped<IPresetsLoader, PresetsLoader>();
+        services.AddScoped<IUserAircraftService, UserAircraftService>();
 
         return services;
     }

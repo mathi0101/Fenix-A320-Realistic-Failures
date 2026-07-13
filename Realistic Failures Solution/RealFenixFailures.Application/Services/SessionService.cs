@@ -1,5 +1,6 @@
 using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Domain.Entities;
+using RealFenixFailures.Domain.Enums;
 using RealFenixFailures.Domain.Interfaces.Repositories;
 
 namespace RealFenixFailures.Application.Services;
@@ -11,10 +12,11 @@ public class SessionService : ISessionService {
         _sessionRepository = sessionRepository;
     }
 
-    public async Task<FlightSession> StartSessionAsync(int presetId, CancellationToken cancellationToken) {
+    public async Task<FlightSession> StartSessionAsync(RiskLevel risk, int userAircraftId, CancellationToken cancellationToken) {
         var session = new FlightSession {
             StartedAtUtc = DateTimeOffset.UtcNow,
-            PresetId = presetId
+            RiskLevel = (int)risk,
+            UserAircraftId = userAircraftId,
         };
 
         await _sessionRepository.AddAsync(session, cancellationToken);

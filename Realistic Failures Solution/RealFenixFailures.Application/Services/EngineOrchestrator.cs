@@ -18,6 +18,8 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
     private readonly IPresetService _presetService;
     private readonly ISessionService _sessionService;
     private readonly ISimulatorConnectionService _simulatorConnectionService;
+    private readonly IUserAircraftService _userAircraftService;
+    private readonly IRealisticSessionManager _realisticSessionManager;
     private readonly FailureEngineSettings _settings;
     private readonly IFailureTrigger _failureTrigger;
     private readonly ILogger<EngineOrchestrator> _logger;
@@ -45,7 +47,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
     private bool isEngineActive;
     private bool isTimerRunning;
     private UserAppMode currentMode = UserAppMode.None;
-    private ConnectionStatusDto connectionStatus;
+    private ConnectionStatusDto connectionStatus = new(false, false, FlightPhaseEnum.ColdAndDark);
 
     public bool IsEngineActive {
         get => isEngineActive;
@@ -96,11 +98,15 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
         ISimFlightDataProvider flightDataProvider,
         IFailureTrigger failureTrigger,
         ISimulatorConnectionService simulatorService,
+        IUserAircraftService userAircraftService,
+        IRealisticSessionManager realisticSessionManager,
         IOptions<FailureEngineSettings> settings,
         ILogger<EngineOrchestrator> logger) {
         _presetService = presetService;
         _sessionService = sessionService;
         _simulatorConnectionService = simulatorService;
+        _userAircraftService = userAircraftService;
+        _realisticSessionManager = realisticSessionManager;
         _failureTrigger = failureTrigger;
         _settings = settings.Value;
         _logger = logger;
@@ -129,7 +135,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
     public async Task UpdateConnection(CancellationToken ct) {
         ConnectionStatus = await _simulatorConnectionService.GetConnectionStatusAsync(ct);
     }
-    // Nuevo método público
     public async Task StopAutomaticTimerAsync(CancellationToken ct) {
         await _operationLock.WaitAsync(ct);
         try {
@@ -145,7 +150,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
         }
     }
 
-    // Nuevo método privado
     private async Task RunAutomaticTimerLoopAsync(CancellationToken ct) {
         if (_automaticTimer == null) return;
 
@@ -164,38 +168,36 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
     #region Realistic Mode
 
-    public async Task StartRealisticModeAsync(int presetId, CancellationToken ct) {
+    public async Task StartRealisticModeAsync(RiskLevel risk, CancellationToken ct) {
         await _operationLock.WaitAsync(ct);
         try {
             if (!ConnectionStatus.IsSimConnectConnected || !ConnectionStatus.IsFenixConnected) {
                 _logger.LogInformation("Tried to start Realistic mode but there is a system disconnected: {@state}", connectionStatus);
                 return;
             }
-            // Validar que no haya otro modo corriendo
             if (IsEngineActive && CurrentMode != UserAppMode.None) {
                 _logger.LogInformation("Tried to start Realistic mode but another mode is already running");
                 return;
             }
 
-            // Obtener el preset correspondiente al modo realista
-            _activePreset = await _presetService.GetByIdAsync(presetId, ct);
-            if (_activePreset == null) {
-                _logger.LogError("Failed to load preset for realistic mode {ModeType}", presetId);
-                return;
-            }
+            var aircraft = await _userAircraftService.GetOrCreateDefaultAsync(ct);
+            _activeSession = await _sessionService.StartSessionAsync(risk, aircraft.Id, ct);
 
+            var systemWears = await _userAircraftService.GetSystemWearsAsync(aircraft.Id, ct);
 
-            // Iniciar sesión
-            _activeSession = await _sessionService.StartSessionAsync(_activePreset.Id, ct);
-
-            // Iniciar el polling
-            StartPolling();
+            var context = new RealisticSessionContext(
+                aircraft,
+                _activeSession,
+                systemWears
+            );
 
             CurrentMode = UserAppMode.Realistic;
             IsEngineActive = true;
 
-            _logger.LogInformation("Realistic mode {ModeType} started with polling interval: {Interval}s",
-                presetId, _settings.CheckIntervalSeconds);
+            await _realisticSessionManager.StartAsync(context, ct);
+
+            _logger.LogInformation("Realistic mode started for aircraft {Registration}. RealisticSessionManager will select from available presets.",
+                aircraft.Registration);
         } finally {
             _operationLock.Release();
         }
@@ -212,7 +214,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 _logger.LogInformation("Tried to start Training preset but Fenix is disconnected: {@state}", connectionStatus);
                 return;
             }
-            // Validar que no haya otro modo corriendo
             if (IsEngineActive && CurrentMode != UserAppMode.None) {
                 _logger.LogWarning("Cannot start training preset: another mode is already running");
                 return;
@@ -223,10 +224,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 _logger.LogError("Failed to load preset with ID {PresetId}", presetId);
                 return;
             }
-
-
-            // Iniciar sesión
-            _activeSession = await _sessionService.StartSessionAsync(_activePreset.Id, ct);
 
             var armedFailures = await _simulatorConnectionService.ExecutePresetAsync(_activePreset, _activeSession, ct);
 
@@ -266,7 +263,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 _logger.LogInformation("Tried to start Custom Preset but there is a system disconnected: {@state}", connectionStatus);
                 return;
             }
-            // Validar que no haya otro modo corriendo
             if (IsEngineActive && CurrentMode != UserAppMode.None) {
                 _logger.LogWarning("Cannot start custom mode: another mode is already running");
                 return;
@@ -278,12 +274,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 return;
             }
 
-
-            // Iniciar sesión
-            _activeSession = await _sessionService.StartSessionAsync(presetId, ct);
-
             if (activateImmediately) {
-                // Activar todas las fallas inmediatamente
                 foreach (var def in _activePreset.PresetFailureDefinitions) {
                     await _simulatorConnectionService.ExecuteFailureAsync(def, _activeSession, ct);
 
@@ -296,10 +287,8 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                     _recentLogs.Add(log);
                 }
 
-                // Iniciar polling para modo custom activo
                 StartPolling();
             } else {
-                // Solo armar las fallas (similar a modo entrenamiento)
                 var armedFailures = await _simulatorConnectionService.ExecutePresetAsync(_activePreset, _activeSession, ct);
 
                 if (!armedFailures.IsSuccess) {
@@ -337,12 +326,14 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 return;
             }
 
+            if (CurrentMode == UserAppMode.Realistic) {
+                await _realisticSessionManager.StopAsync(ct);
+            }
+
             StopPolling();
 
-            // Resetear todas las fallas en Fenix
             await _simulatorConnectionService.ResetAllFailuresAsync(ct);
 
-            // Limpiar estado
             _activePreset = null;
             _activeSession = null;
             _activeScenarioFailures.Clear();
@@ -361,11 +352,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
     }
 
     public Task<bool> IsPresetArmedAsync(CancellationToken ct) {
-        // En modo entrenamiento, verificar si el preset está armado
         if (CurrentMode == UserAppMode.Training && _activePreset != null) {
-            // Aquí deberías implementar la lógica específica para verificar
-            // si las fallas del preset están armadas en Fenix
-            // Por ahora retornamos true si hay un preset activo
             return Task.FromResult(true);
         }
 
@@ -391,7 +378,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
         if (_realisticEngineTimer == null) return;
 
         try {
-            // Ejecutar primer tick inmediato
             await PollAndTriggerAsync(_realisticEngineCts.Token);
 
             while (await _realisticEngineTimer.WaitForNextTickAsync(_realisticEngineCts.Token) && !_realisticEngineCts.Token.IsCancellationRequested) {
@@ -416,7 +402,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
             var phase = connectionStatus.CurrentFlightPhase;
 
             if (CurrentMode == UserAppMode.Realistic) {
-                // En modo realista, usar el motor de probabilidad para activar fallas
                 var trigger = _failureTrigger.TryTriggerFailure(
                     _activePreset,
                     phase,
@@ -445,8 +430,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                     }
                 }
             } else if (CurrentMode == UserAppMode.Custom && _activePreset.PresetType == PresetTypeEnum.Custom) {
-                // En modo custom activo, podrías implementar lógica específica aquí
-                // Por ahora dejamos que el polling continúe pero sin acción adicional
             }
         } catch (Exception ex) {
             _logger.LogError(ex, "Error while polling for failure triggers.");
