@@ -13,7 +13,7 @@ public class FailureTrigger : IFailureTrigger {
         _random = random ?? Random.Shared;
     }
 
-    public TriggeredFailure? TryTriggerFailure(FailurePreset preset, FlightPhaseEnum currentPhase, double globalProbability, DateTimeOffset timestampUtc) {
+    public TriggeredFailure? TryTriggerFailure(FailurePreset preset, FlightPhaseEnum currentPhase, double globalProbability, DateTime timestampUtc) {
         if (preset.PresetFailureDefinitions.Count == 0) {
             return null;
         }

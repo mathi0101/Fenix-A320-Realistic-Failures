@@ -14,6 +14,21 @@ namespace RealFenixFailures.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "AircraftWearableSystems",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    ShortName = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
+                    DisplayOrder = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AircraftWearableSystems", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "FailurePresetTypes",
                 columns: table => new
                 {
@@ -38,6 +53,23 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_FenixFailureSystems", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserAircrafts",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Registration = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false),
+                    IcaoTypeCode = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false),
+                    TotalFlightHours = table.Column<double>(type: "REAL", nullable: false),
+                    TotalFlights = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserAircrafts", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -86,21 +118,51 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AircraftSystemWears",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    UserAircraftId = table.Column<int>(type: "INTEGER", nullable: false),
+                    WearableSystemId = table.Column<int>(type: "INTEGER", nullable: false),
+                    WearPercentage = table.Column<double>(type: "REAL", nullable: false),
+                    LastUpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AircraftSystemWears", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AircraftSystemWears_AircraftWearableSystems_WearableSystemId",
+                        column: x => x.WearableSystemId,
+                        principalTable: "AircraftWearableSystems",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_AircraftSystemWears_UserAircrafts_UserAircraftId",
+                        column: x => x.UserAircraftId,
+                        principalTable: "UserAircrafts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "FlightSessions",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    StartedAtUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    PresetId = table.Column<int>(type: "INTEGER", nullable: false)
+                    StartedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    RiskLevel = table.Column<int>(type: "INTEGER", nullable: false),
+                    UserAircraftId = table.Column<int>(type: "INTEGER", nullable: false),
+                    FinishedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_FlightSessions", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_FlightSessions_FailurePresets_PresetId",
-                        column: x => x.PresetId,
-                        principalTable: "FailurePresets",
+                        name: "FK_FlightSessions_UserAircrafts_UserAircraftId",
+                        column: x => x.UserAircraftId,
+                        principalTable: "UserAircrafts",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -165,19 +227,12 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     FlightSessionId = table.Column<int>(type: "INTEGER", nullable: false),
                     FenixFailureId = table.Column<string>(type: "TEXT", nullable: false),
-                    PresetId = table.Column<int>(type: "INTEGER", nullable: true),
-                    TriggeredAtUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    TriggeredAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     FlightPhase = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_TriggeredFailures", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_TriggeredFailures_FailurePresets_PresetId",
-                        column: x => x.PresetId,
-                        principalTable: "FailurePresets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_TriggeredFailures_FenixFailureDefinitions_FenixFailureId",
                         column: x => x.FenixFailureId,
@@ -193,6 +248,21 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 });
 
             migrationBuilder.InsertData(
+                table: "AircraftWearableSystems",
+                columns: new[] { "Id", "DisplayOrder", "Name", "ShortName" },
+                values: new object[,]
+                {
+                    { 1, 1, "Engine 1", "ENG1" },
+                    { 2, 2, "Engine 2", "ENG2" },
+                    { 3, 3, "Hydraulic System", "HYD" },
+                    { 4, 4, "Landing Gear", "GEAR" },
+                    { 5, 5, "Navigation Systems", "NAV" },
+                    { 6, 6, "Pneumatic System", "PNEU" },
+                    { 7, 7, "APU", "APU" },
+                    { 8, 8, "Doors", "DOOR" }
+                });
+
+            migrationBuilder.InsertData(
                 table: "FailurePresetTypes",
                 columns: new[] { "Id", "Description" },
                 values: new object[,]
@@ -202,6 +272,17 @@ namespace RealFenixFailures.Infrastructure.Migrations
                     { 3, "Custom" },
                     { 4, "UserPreset" }
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AircraftSystemWears_UserAircraftId_WearableSystemId",
+                table: "AircraftSystemWears",
+                columns: new[] { "UserAircraftId", "WearableSystemId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AircraftSystemWears_WearableSystemId",
+                table: "AircraftSystemWears",
+                column: "WearableSystemId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FailurePresets_PresetType",
@@ -219,9 +300,9 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 column: "SystemId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FlightSessions_PresetId",
+                name: "IX_FlightSessions_UserAircraftId",
                 table: "FlightSessions",
-                column: "PresetId");
+                column: "UserAircraftId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PresetFailureDefinitions_FenixFailureId",
@@ -239,19 +320,29 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 column: "FlightSessionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TriggeredFailures_PresetId",
-                table: "TriggeredFailures",
-                column: "PresetId");
+                name: "IX_UserAircrafts_Registration",
+                table: "UserAircrafts",
+                column: "Registration",
+                unique: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "AircraftSystemWears");
+
+            migrationBuilder.DropTable(
                 name: "PresetFailureDefinitions");
 
             migrationBuilder.DropTable(
                 name: "TriggeredFailures");
+
+            migrationBuilder.DropTable(
+                name: "AircraftWearableSystems");
+
+            migrationBuilder.DropTable(
+                name: "FailurePresets");
 
             migrationBuilder.DropTable(
                 name: "FenixFailureDefinitions");
@@ -260,16 +351,16 @@ namespace RealFenixFailures.Infrastructure.Migrations
                 name: "FlightSessions");
 
             migrationBuilder.DropTable(
+                name: "FailurePresetTypes");
+
+            migrationBuilder.DropTable(
                 name: "FenixFailureGroups");
 
             migrationBuilder.DropTable(
-                name: "FailurePresets");
+                name: "UserAircrafts");
 
             migrationBuilder.DropTable(
                 name: "FenixFailureSystems");
-
-            migrationBuilder.DropTable(
-                name: "FailurePresetTypes");
         }
     }
 }

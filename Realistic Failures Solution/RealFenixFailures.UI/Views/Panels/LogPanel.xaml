@@ -5,23 +5,26 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:vm="clr-namespace:RealFenixFailures.UI.ViewModels" d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
              mc:Ignorable="d" 
-             d:DesignHeight="150" d:DesignWidth="800">
+             d:DesignHeight="400" d:DesignWidth="260">
 
-    <Border Background="#0A0C10"
+    <!-- LOG EN TIEMPO REAL — ahora ubicado en el panel izquierdo, debajo de los modos.
+         Ocupa el espacio restante del panel izquierdo con scroll automático. -->
+    <Border Background="{StaticResource Brush.Background.LogArea}"
             BorderBrush="{StaticResource Brush.Border.Default}"
-            BorderThickness="0,1,0,0"
-            CornerRadius="0,0,12,12"
-            Padding="20,10">
+            BorderThickness="1"
+            CornerRadius="10"
+            Padding="14,12">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="80"/>
+                <!-- El área de log ocupa TODO el espacio restante del panel izquierdo -->
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
                 <TextBlock Text="LOG EN TIEMPO REAL" FontSize="10" FontWeight="Bold"
                            Foreground="{StaticResource Brush.Text.Secondary}" VerticalAlignment="Center"/>
-                <Border Background="#14532D" CornerRadius="10" Padding="8,2" Margin="12,0,0,0"
+                <Border Background="#14532D" CornerRadius="10" Padding="8,2" Margin="10,0,0,0"
                         Visibility="{Binding IsEngineActive, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
                         <Ellipse Width="6" Height="6" Fill="{StaticResource Brush.Accent.Green.Primary}"
@@ -32,11 +35,15 @@
                 </Border>
             </StackPanel>
 
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" x:Name="LogScrollViewer">
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          x:Name="LogScrollViewer"
+                          ScrollChanged="LogScrollViewer_ScrollChanged">
                 <ItemsControl ItemsSource="{Binding LogEntries}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding}" Style="{StaticResource LogEntryStyle}"/>
+                            <TextBlock Text="{Binding}" Style="{StaticResource LogEntryStyle}"
+                                       TextWrapping="Wrap"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

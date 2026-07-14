@@ -16,7 +16,7 @@ public interface IRealisticSessionManager : INotifyPropertyChanged {
 public class FailureTriggeredEventArgs : EventArgs {
     public required string FenixFailureId { get; init; }
     public required string Description { get; init; }
-    public DateTimeOffset TriggeredAtUtc { get; init; }
+    public DateTime TriggeredAtUtc { get; init; }
 }
 
 public class SessionErrorEventArgs : EventArgs {

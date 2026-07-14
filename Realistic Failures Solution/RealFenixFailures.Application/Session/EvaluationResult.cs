@@ -49,4 +49,4 @@ public record TriggeredFailureInfo(
     string FenixFailureId,
     string Description,
     string PresetName,
-    DateTimeOffset TriggeredAtUtc);
+    DateTime TriggeredAtUtc);

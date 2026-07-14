@@ -10,7 +10,7 @@ public class MockSimConnectClient : ISimConnectClient {
     // Constructor que permite configurar las respuestas por defecto
     public MockSimConnectClient(bool isConnected = true, SimAircraftState aircraftState = null) {
         _isConnected = isConnected;
-        _aircraftState = aircraftState ?? new SimAircraftState { IsConnected = true };
+        _aircraftState = aircraftState ?? new SimAircraftState { IsConnected = true, IsOnGround = true };
     }
 
     // Método para actualizar manualmente el estado de conexión

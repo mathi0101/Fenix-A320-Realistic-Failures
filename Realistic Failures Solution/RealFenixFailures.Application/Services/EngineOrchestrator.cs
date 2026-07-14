@@ -187,7 +187,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 return;
             }
 
-            var aircraft = await _userAircraftService.GetAircraftById(aircraftId, ct);
+            var aircraft = await _userAircraftService.GetByIdAsync(aircraftId, ct);
             if (aircraft == null) {
                 _logger.LogWarning("User Aircraft id: {a} Not Found", aircraftId);
                 return;
@@ -200,10 +200,11 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 aircraft
             );
 
-            CurrentMode = UserAppMode.Realistic;
-            IsEngineActive = true;
 
             await _realisticSessionManager.StartNewSessionAsync(context, ct);
+
+            CurrentMode = UserAppMode.Realistic;
+            IsEngineActive = true;
 
             _logger.LogInformation("Realistic mode started for aircraft {Registration}. RealisticSessionManager will select from available presets.",
                 aircraft.Registration);
@@ -288,7 +289,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                     await _simulatorConnectionService.ExecuteFailureAsync(def, ct);
 
                     var log = new FailureTriggerLogDto(
-                        DateTimeOffset.UtcNow,
+                        DateTime.UtcNow,
                         def.FenixFailureId,
                         def.FenixFailure!.Name,
                         (await _simulatorConnectionService.GetConnectionStatusAsync(ct)).CurrentFlightPhase,

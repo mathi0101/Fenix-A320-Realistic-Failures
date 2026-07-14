@@ -1,3 +1,4 @@
+using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.Domain.DTOs;
 using RealFenixFailures.Domain.Entities;
 using RealFenixFailures.Domain.Enums;
@@ -9,7 +10,7 @@ public class RealisticSessionState : INotifyPropertyChanged {
     #region Fields
 
     private readonly FlightSession _session;
-    private readonly UserAircraft _aircraft;
+    private readonly UserAircraftDto _aircraft;
     private FlightPhaseEnum flightPhase = FlightPhaseEnum.Unknown;
     #endregion
 
@@ -23,7 +24,7 @@ public class RealisticSessionState : INotifyPropertyChanged {
 
     #region Properties
     public FlightSession Session => _session;
-    public UserAircraft Aircraft => _aircraft;
+    public UserAircraftDto Aircraft => _aircraft;
 
     public FlightPhaseEnum FlightPhase {
         get => flightPhase;
@@ -44,7 +45,7 @@ public class RealisticSessionState : INotifyPropertyChanged {
     #endregion
 
     #region Constructor
-    public RealisticSessionState(FlightSession session, UserAircraft aircraft) {
+    public RealisticSessionState(FlightSession session, UserAircraftDto aircraft) {
         _session = session;
         _aircraft = aircraft;
     }

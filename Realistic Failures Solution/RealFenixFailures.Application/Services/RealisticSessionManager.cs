@@ -39,11 +39,7 @@ public class RealisticSessionManager : IRealisticSessionManager {
     #endregion
 
     #region Properties
-    private RealisticSessionState? _sessionState;
-    public RealisticSessionState? SessionState {
-        get => _sessionState;
-        set => _sessionState = value;
-    }
+    public RealisticSessionState? SessionState => _engine?.State;
     #endregion
 
     #region Constructor
@@ -78,6 +74,8 @@ public class RealisticSessionManager : IRealisticSessionManager {
                 return ServiceResult<string>.Fail(new InvalidOperationException(), result.Text);
             }
 
+
+
             _evaluationCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             _evaluationTimer = new PeriodicTimer(TimeSpan.FromSeconds(EvaluationIntervalSeconds));
             _ = Task.Run(() => RunEvaluationLoopAsync(_evaluationCts.Token), _evaluationCts.Token);
@@ -95,7 +93,6 @@ public class RealisticSessionManager : IRealisticSessionManager {
         _evaluationTimer?.Dispose();
         _evaluationTimer = null;
         _engine = null;
-        SessionState = null;
         _logger.LogInformation("Realistic session stopped");
         return Task.CompletedTask;
     }

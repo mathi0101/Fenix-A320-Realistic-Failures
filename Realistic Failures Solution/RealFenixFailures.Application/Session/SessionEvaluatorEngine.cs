@@ -185,7 +185,7 @@ public class SessionEvaluatorEngine : INotifyPropertyChanged {
         GroundSpeedKnots: raw.GroundSpeed,
         VerticalSpeedFpm: raw.VerticalSpeed,
         OnGround: raw.IsOnGround,
-        CapturedAt: DateTimeOffset.UtcNow,
+        CapturedAt: DateTime.UtcNow,
         fenixFailures.GetFailuresList());
     }
     #endregion
@@ -467,7 +467,7 @@ doneTriggers:
                 return null;
             }
 
-            var now = DateTimeOffset.UtcNow;
+            var now = DateTime.UtcNow;
             var key = definition.FenixFailureId;
 
             state.ExecutedFailures.Add(definition);
@@ -526,7 +526,7 @@ doneTriggers:
         double GroundSpeedKnots,
         double VerticalSpeedFpm,
         bool OnGround,
-        DateTimeOffset CapturedAt,
+        DateTime CapturedAt,
         IReadOnlyList<FenixFailureDto> FenixFailures
     );
     private sealed record StateChangeSet(

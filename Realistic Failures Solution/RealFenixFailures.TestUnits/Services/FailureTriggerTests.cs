@@ -28,7 +28,7 @@ public class FailureTriggerTests {
         };
 
         // Act
-        var result = _failureTrigger.TryTriggerFailure(preset, FlightPhaseEnum.Cruise, 1.0, DateTimeOffset.UtcNow);
+        var result = _failureTrigger.TryTriggerFailure(preset, FlightPhaseEnum.Cruise, 1.0, DateTime.UtcNow);
 
         // Assert
         Assert.Null(result);
@@ -52,7 +52,7 @@ public class FailureTriggerTests {
         _mockRandom.SetupNextDouble(0.9);
 
         // Act
-        var result = _failureTrigger.TryTriggerFailure(preset, FlightPhaseEnum.Cruise, 0.5, DateTimeOffset.UtcNow);
+        var result = _failureTrigger.TryTriggerFailure(preset, FlightPhaseEnum.Cruise, 0.5, DateTime.UtcNow);
 
         // Assert
         Assert.Null(result);
@@ -79,7 +79,7 @@ public class FailureTriggerTests {
         _mockRandom.SetupNextDouble(0.3); // chequeo global (0.3 <= 0.5)
         _mockRandom.SetupNextDouble(0.1); // roll (0.1 * totalWeight(=1.0) => 0.1 -> selecciona al único candidato)
 
-        var timestamp = DateTimeOffset.UtcNow;
+        var timestamp = DateTime.UtcNow;
 
         // Act
         var result = _failureTrigger.TryTriggerFailure(preset, FlightPhaseEnum.Cruise, 0.5, timestamp);

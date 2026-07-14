@@ -23,7 +23,7 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("LastUpdatedAt")
+                    b.Property<DateTime>("LastUpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("UserAircraftId")
@@ -244,13 +244,13 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset?>("FinishedAt")
+                    b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("RiskLevel")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("StartedAt")
+                    b.Property<DateTime>("StartedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("UserAircraftId")
@@ -363,7 +363,7 @@ namespace RealFenixFailures.Infrastructure.Migrations
                     b.Property<int>("FlightSessionId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("TriggeredAt")
+                    b.Property<DateTime>("TriggeredAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -381,7 +381,7 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("IcaoTypeCode")

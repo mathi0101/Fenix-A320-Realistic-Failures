@@ -11,8 +11,8 @@ using RealFenixFailures.Infrastructure.Persistence;
 namespace RealFenixFailures.Infrastructure.Migrations
 {
     [DbContext(typeof(RealFenixDbContext))]
-    [Migration("20260713063430_AddAircraftWearSystem")]
-    partial class AddAircraftWearSystem
+    [Migration("20260714124013_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -26,7 +26,7 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("LastUpdatedAtUtc")
+                    b.Property<DateTime>("LastUpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("UserAircraftId")
@@ -247,21 +247,19 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("PresetId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("RiskLevel")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTimeOffset>("StartedAtUtc")
+                    b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("UserAircraftId")
+                    b.Property<int>("RiskLevel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserAircraftId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PresetId");
 
                     b.HasIndex("UserAircraftId");
 
@@ -368,10 +366,7 @@ namespace RealFenixFailures.Infrastructure.Migrations
                     b.Property<int>("FlightSessionId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("PresetId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTimeOffset>("TriggeredAtUtc")
+                    b.Property<DateTime>("TriggeredAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -379,8 +374,6 @@ namespace RealFenixFailures.Infrastructure.Migrations
                     b.HasIndex("FenixFailureId");
 
                     b.HasIndex("FlightSessionId");
-
-                    b.HasIndex("PresetId");
 
                     b.ToTable("TriggeredFailures");
                 });
@@ -391,7 +384,7 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("IcaoTypeCode")
@@ -470,18 +463,11 @@ namespace RealFenixFailures.Infrastructure.Migrations
 
             modelBuilder.Entity("RealFenixFailures.Domain.Entities.FlightSession", b =>
                 {
-                    b.HasOne("RealFenixFailures.Domain.Entities.FailurePreset", "Preset")
-                        .WithMany()
-                        .HasForeignKey("PresetId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("RealFenixFailures.Domain.Entities.UserAircraft", "UserAircraft")
                         .WithMany("FlightSessions")
                         .HasForeignKey("UserAircraftId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Preset");
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("UserAircraft");
                 });
@@ -519,16 +505,9 @@ namespace RealFenixFailures.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("RealFenixFailures.Domain.Entities.FailurePreset", "Preset")
-                        .WithMany()
-                        .HasForeignKey("PresetId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("FenixFailure");
 
                     b.Navigation("FlightSession");
-
-                    b.Navigation("Preset");
                 });
 
             modelBuilder.Entity("RealFenixFailures.Domain.Entities.AircraftWearableSystem", b =>

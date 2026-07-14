@@ -1,3 +1,4 @@
+using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Domain.Entities;
 using RealFenixFailures.Domain.Enums;
@@ -12,9 +13,9 @@ public class SessionService : ISessionService {
         _sessionRepository = sessionRepository;
     }
 
-    public async Task<FlightSession> StartSessionAsync(RiskLevel risk, UserAircraft aircraft, CancellationToken cancellationToken) {
+    public async Task<FlightSession> StartSessionAsync(RiskLevel risk, UserAircraftDto aircraft, CancellationToken cancellationToken) {
         var session = new FlightSession {
-            StartedAt = DateTimeOffset.UtcNow,
+            StartedAt = DateTime.UtcNow,
             RiskLevel = (int)risk,
             UserAircraftId = aircraft.Id,
         };

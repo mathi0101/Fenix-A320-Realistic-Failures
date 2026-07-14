@@ -6,6 +6,7 @@ using RealFenixFailures.Domain.Interfaces;
 using RealFenixFailures.UI.Commands;
 using RealFenixFailures.UI.ViewModels.Base;
 using RealFenixFailures.UI.ViewModels.Extra;
+using RealFenixFailures.UI.ViewModels.Realistic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Media;
@@ -20,6 +21,9 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
     private readonly IPresetService _presetService;
     private readonly IFlightHistoryService _flightHistoryService;
     private readonly ILogger<MainWindowViewModel> _logger;
+
+    // ViewModel del flujo de 4 pasos del Modo Realista (Paso 1..4).
+    public RealisticModeViewModel Realistic { get; }
 
     // Connection state
     private FlightPhaseEnum currentFlightPhase = FlightPhaseEnum.Unknown;
@@ -59,10 +63,12 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
         IEngineOrchestrator orchestrator,
         IPresetService presetService,
         IFlightHistoryService flightHistoryService,
+        RealisticModeViewModel realisticModeViewModel,
         ILogger<MainWindowViewModel> logger) {
         _orchestrator = orchestrator;
         _presetService = presetService;
         _flightHistoryService = flightHistoryService;
+        Realistic = realisticModeViewModel;
         _logger = logger;
 
         // Suscribirse a los eventos del orquestador
@@ -157,7 +163,22 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
         }
     }
 
-    public string CurrentFlightPhaseDisplay => CurrentFlightPhase.ToString().ToUpperInvariant();
+    public string CurrentFlightPhaseDisplay {
+        get {
+            return CurrentFlightPhase switch {
+                FlightPhaseEnum.ColdAndDark => "Cold and Dark",
+                FlightPhaseEnum.Taxi => "Taxing",
+                FlightPhaseEnum.Takeoff => "Takeoff",
+                FlightPhaseEnum.Climb => "Climbing",
+                FlightPhaseEnum.Cruise => "Cruising",
+                FlightPhaseEnum.Descent => "Descending",
+                FlightPhaseEnum.Approach => "Approach",
+                FlightPhaseEnum.Landing => "Landing",
+                FlightPhaseEnum.Parked => "Parked",
+                _ => "Unknown"
+            };
+        }
+    }
 
     // Dot colors (binding antiguo en XAML)
     public Color SimConnectDotColor => isSimConnected ? Color.FromRgb(34, 197, 94) : Color.FromRgb(100, 116, 139);
@@ -341,6 +362,7 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
     // Initialization
     public async Task InitializeAsync() {
         await LoadTrainingScenarios();
+        await Realistic.InitializeAsync();
         await RefreshAsync();
         await _orchestrator.StartAutomaticTimerAsync(CancellationToken.None);
     }
@@ -556,5 +578,6 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
     public void Dispose() {
         _orchestrator.StopAutomaticTimerAsync(CancellationToken.None);
         _orchestrator.PropertyChanged -= Orchestrator_PropertyChanged;
+        Realistic.Dispose();
     }
 }

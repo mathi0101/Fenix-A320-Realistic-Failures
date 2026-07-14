@@ -17,7 +17,7 @@ public class SimConnectClient : ISimConnectClient, IDisposable {
 
     private bool _isConnected = false;
     private SimAircraftState _lastKnownState = new SimAircraftState();
-    private DateTimeOffset _lastDataReceivedUtc = DateTimeOffset.MinValue;
+    private DateTime _lastDataReceivedUtc = DateTime.MinValue;
     private const int MESSAGE_PUMP_INTERVAL_MS = 10;
     private const int DATA_REQUEST_INTERVAL_MS = 100;
 
@@ -56,7 +56,7 @@ public class SimConnectClient : ISimConnectClient, IDisposable {
 
                 RegisterSimConnectHandlers();
                 RegisterDataDefinitions();
-                
+
                 _isConnected = true;
                 _logger.LogInformation("Successfully connected to SimConnect");
                 OnConnectionStateChanged?.Invoke(true);
@@ -82,7 +82,7 @@ public class SimConnectClient : ISimConnectClient, IDisposable {
         }
 
         // Verificar que la conexión siga siendo válida (datos recientes)
-        var timeSinceLastData = DateTimeOffset.UtcNow - _lastDataReceivedUtc;
+        var timeSinceLastData = DateTime.UtcNow - _lastDataReceivedUtc;
         if (timeSinceLastData > TimeSpan.FromSeconds(5)) {
             _logger.LogWarning("No data received from SimConnect for {Seconds} seconds", timeSinceLastData.TotalSeconds);
             // Intentar reconectar si no hay datos
@@ -113,10 +113,10 @@ public class SimConnectClient : ISimConnectClient, IDisposable {
                 _messagePumpTask?.Wait(TimeSpan.FromSeconds(2));
                 _messagePumpCts?.Dispose();
                 _messagePumpCts = null;
-                
+
                 _simConnect?.Dispose();
                 _simConnect = null;
-                
+
                 _logger.LogInformation("Disconnected from SimConnect");
                 OnConnectionStateChanged?.Invoke(false);
             } catch (Exception ex) {
@@ -233,14 +233,14 @@ public class SimConnectClient : ISimConnectClient, IDisposable {
                 _stateReadWriteLock.EnterWriteLock();
                 try {
                     _lastKnownState = newState;
-                    _lastDataReceivedUtc = DateTimeOffset.UtcNow;
+                    _lastDataReceivedUtc = DateTime.UtcNow;
                 } finally {
                     _stateReadWriteLock.ExitWriteLock();
                 }
 
-                _logger.LogDebug("Aircraft state updated: Alt={Altitude}, GS={GroundSpeed}, Phase={IsOnGround}", 
+                _logger.LogDebug("Aircraft state updated: Alt={Altitude}, GS={GroundSpeed}, Phase={IsOnGround}",
                     newState.Altitude, newState.GroundSpeed, newState.IsOnGround);
-                
+
                 OnAircraftStateChanged?.Invoke(newState.Clone());
             }
         } catch (Exception ex) {

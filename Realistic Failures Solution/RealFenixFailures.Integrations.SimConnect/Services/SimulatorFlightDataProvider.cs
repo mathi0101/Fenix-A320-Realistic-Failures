@@ -10,7 +10,7 @@ public class SimulatorFlightDataProvider : ISimFlightDataProvider {
     private readonly ILogger<SimulatorFlightDataProvider> _logger;
     private readonly SemaphoreSlim _healthLock = new(1, 1);
 
-    private DateTimeOffset _lastHealthCheckAtUtc = DateTimeOffset.MinValue;
+    private DateTime _lastHealthCheckAtUtc = DateTime.MinValue;
     private bool _lastHealthCheckResult;
 
     public SimulatorFlightDataProvider(ISimConnectClient client, ILogger<SimulatorFlightDataProvider> logger) {
@@ -21,7 +21,7 @@ public class SimulatorFlightDataProvider : ISimFlightDataProvider {
 
     public async Task<bool> IsConnectedAsync(CancellationToken ct) {
         var intervalSeconds = 10;
-        var now = DateTimeOffset.UtcNow;
+        var now = DateTime.UtcNow;
 
         if (now - _lastHealthCheckAtUtc < TimeSpan.FromSeconds(intervalSeconds)) {
             _logger.LogDebug("Returning cached health check result: {Result}", _lastHealthCheckResult);
@@ -30,7 +30,7 @@ public class SimulatorFlightDataProvider : ISimFlightDataProvider {
 
         await _healthLock.WaitAsync(ct);
         try {
-            now = DateTimeOffset.UtcNow;
+            now = DateTime.UtcNow;
             if (now - _lastHealthCheckAtUtc < TimeSpan.FromSeconds(intervalSeconds)) {
                 return _lastHealthCheckResult;
             }
@@ -68,7 +68,7 @@ public class SimulatorFlightDataProvider : ISimFlightDataProvider {
 
     private void UpdateHealthState(bool isAvailable) {
         _lastHealthCheckResult = isAvailable;
-        _lastHealthCheckAtUtc = DateTimeOffset.UtcNow;
+        _lastHealthCheckAtUtc = DateTime.UtcNow;
     }
 
 

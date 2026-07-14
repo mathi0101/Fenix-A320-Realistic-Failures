@@ -27,7 +27,6 @@
                 <RowDefinition Height="48"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- TITLE BAR -->
@@ -130,21 +129,25 @@
             </Border>
 
             <!-- MAIN CONTENT -->
-            <Grid Grid.Row="2" Margin="20,16,20,0">
+            <Grid Grid.Row="2" Margin="20,16,20,20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="260"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- LEFT: Mode selector -->
-                <DockPanel Grid.Column="0" Margin="0,0,16,0">
-                    <TextBlock DockPanel.Dock="Top"
-                               Text="MODOS" FontSize="10" FontWeight="Bold"
+                <!-- LEFT: Mode selector (arriba) + Log en tiempo real (abajo, ocupa el resto) -->
+                <Grid Grid.Column="0" Margin="0,0,16,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                        <TextBlock Text="MODOS" FontSize="10" FontWeight="Bold"
                                Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,0,0,12"/>
-                    <StackPanel DockPanel.Dock="Top">
                         <RadioButton Style="{StaticResource ModeCardStyle}"
                              IsChecked="{Binding IsRealisticModeSelected}"
-                             GroupName="AppMode">       
+                             GroupName="AppMode">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="36"/>
@@ -209,7 +212,10 @@
                         </RadioButton>
 
                     </StackPanel>
-                </DockPanel>
+
+                    <!-- LOG EN TIEMPO REAL: ocupa el espacio restante del panel izquierdo -->
+                    <panels:LogPanel Grid.Row="1"/>
+                </Grid>
 
                 <!-- RIGHT: Mode content panel — single child Grid inside Border -->
                 <Border Grid.Column="1"
@@ -225,9 +231,6 @@
                     </Grid>
                 </Border>
             </Grid>
-
-            <!-- LOG FOOTER -->
-            <panels:LogPanel Grid.Row="3"/>
 
         </Grid>
     </Border>

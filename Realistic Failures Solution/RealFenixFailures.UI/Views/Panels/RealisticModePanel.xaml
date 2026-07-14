@@ -1,197 +1,631 @@
 ﻿<UserControl x:Class="RealFenixFailures.UI.Views.Panels.RealisticModePanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:vm="clr-namespace:RealFenixFailures.UI.ViewModels" d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
-             mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="800">
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:RealFenixFailures.UI.ViewModels"
+             xmlns:rvm="clr-namespace:RealFenixFailures.UI.ViewModels.Realistic"
+             d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
+             mc:Ignorable="d"
+             d:DesignHeight="620" d:DesignWidth="800">
 
-    <Grid>
+    <UserControl.Resources>
+        <!-- Botón/tarjeta genérica seleccionable -->
+        <Style x:Key="CardButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#0D0F14"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Brush.Border.Default}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="B" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8" Padding="14">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="#1A1E28"/>
+                                <Setter TargetName="B" Property="BorderBrush" Value="{StaticResource Brush.Accent.Blue.Primary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- TextBox oscuro para el formulario inline -->
+        <Style x:Key="DarkTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="#0A0C10"/>
+            <Setter Property="Foreground" Value="{StaticResource Brush.Text.Primary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Brush.Border.Default}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="CaretBrush" Value="{StaticResource Brush.Text.Primary}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <!-- El contenido del panel se enlaza al RealisticModeViewModel expuesto por MainWindowViewModel.
+         La Visibility del panel (en MainWindow) se sigue evaluando contra MainWindowViewModel. -->
+    <Grid x:Name="RealisticRoot" DataContext="{Binding Realistic}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+        <!-- ENCABEZADO -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
             <TextBlock Text="MODO REALISTA" FontSize="10" FontWeight="Bold"
                        Foreground="{StaticResource Brush.Accent.Amber.Primary}"/>
-            <TextBlock Text="El sistema monitorea el historial de vuelos y genera fallas de forma autónoma basándose en el desgaste acumulado. No hay interacción manual."
+            <TextBlock Text="El sistema monitorea el historial de vuelos y genera fallas de forma autónoma basándose en el desgaste acumulado."
                        FontSize="12" Foreground="{StaticResource Brush.Text.Secondary}"
                        TextWrapping="Wrap" Margin="0,6,0,0"/>
+
+            <!-- Indicador de pasos -->
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                <Border CornerRadius="10" Padding="10,3" Margin="0,0,6,0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="#1A2540"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsStep1}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource Brush.Accent.Blue.Primary}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="1 · Aeronave" FontSize="10" FontWeight="SemiBold" Foreground="White"/>
+                </Border>
+                <Border CornerRadius="10" Padding="10,3" Margin="0,0,6,0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="#1A2540"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsStep2}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource Brush.Accent.Blue.Primary}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="2 · Dashboard" FontSize="10" FontWeight="SemiBold" Foreground="White"/>
+                </Border>
+                <Border CornerRadius="10" Padding="10,3" Margin="0,0,6,0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="#1A2540"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsStep3}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource Brush.Accent.Blue.Primary}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="3 · Riesgo" FontSize="10" FontWeight="SemiBold" Foreground="White"/>
+                </Border>
+                <Border CornerRadius="10" Padding="10,3">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="#1A2540"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsStep4}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource Brush.Accent.Blue.Primary}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="4 · Activar" FontSize="10" FontWeight="SemiBold" Foreground="White"/>
+                </Border>
+            </StackPanel>
         </StackPanel>
 
+        <!-- CONTENIDO DE PASOS -->
         <Grid Grid.Row="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
 
-            <!-- Stats cards -->
-            <Grid Grid.Row="0" Margin="0,0,0,16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Background="#0D0F14" CornerRadius="8" Padding="12" Margin="0,0,8,0">
+            <!-- ================= PASO 1: SELECCIÓN / CREACIÓN DE AERONAVE ================= -->
+            <Grid Visibility="{Binding IsStep1, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="PASO 1 · SELECCIONÁ UNA AERONAVE" FontSize="10" FontWeight="Bold"
+                           Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,0,0,10"/>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <TextBlock Text="VUELOS" FontSize="9" FontWeight="Bold"
-                                   Foreground="{StaticResource Brush.Text.Secondary}"/>
-                        <TextBlock Text="{Binding TotalFlights}" FontSize="22" FontWeight="Bold"
-                                   Foreground="{StaticResource Brush.Text.Primary}" Margin="0,4,0,0"/>
-                        <TextBlock Text="registrados" FontSize="10"
-                                   Foreground="{StaticResource Brush.Text.Secondary}"/>
+                        <!-- Estado vacío -->
+                        <TextBlock Text="No hay aeronaves registradas. Creá una nueva para empezar."
+                                   FontSize="12" Foreground="{StaticResource Brush.Text.Secondary}"
+                                   TextWrapping="Wrap" Margin="0,0,0,10"
+                                   Visibility="{Binding HasAircraft, Converter={StaticResource InverseBoolToVis}}"/>
+
+                        <ItemsControl ItemsSource="{Binding Aircraft}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type rvm:UserAircraftItemViewModel}">
+                                    <Button Style="{StaticResource CardButtonStyle}"
+                                            Command="{Binding DataContext.SelectAircraftCommand, ElementName=RealisticRoot}"
+                                            CommandParameter="{Binding}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Width="40" Height="40" CornerRadius="8"
+                                                    Background="#2A1C1C" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                <TextBlock Text="🛩️" FontSize="18"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Registration}" FontSize="15" FontWeight="Bold"
+                                                               Foreground="{StaticResource Brush.Text.Primary}"/>
+                                                    <Border Background="#1A2540" CornerRadius="4" Padding="6,1" Margin="10,0,0,0">
+                                                        <TextBlock Text="{Binding IcaoTypeCode}" FontSize="10"
+                                                                   Foreground="{StaticResource Brush.Accent.Blue.Primary}"/>
+                                                    </Border>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                    <TextBlock Text="{Binding HoursDisplay}" FontSize="11"
+                                                               Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                                    <TextBlock Text=" · " FontSize="11"
+                                                               Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                                    <TextBlock Text="{Binding FlightsDisplay}" FontSize="11"
+                                                               Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="▶" FontSize="14"
+                                                       Foreground="{StaticResource Brush.Text.Secondary}"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Formulario inline de creación -->
+                        <Border Background="#0D0F14" BorderBrush="{StaticResource Brush.Accent.Green.Primary}"
+                                BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,6,0,0"
+                                Visibility="{Binding ShowCreateForm, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="NUEVA AERONAVE" FontSize="10" FontWeight="Bold"
+                                           Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,0,0,10"/>
+                                <TextBlock Text="Matrícula (Registration)" FontSize="11"
+                                           Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,0,0,4"/>
+                                <TextBox Style="{StaticResource DarkTextBoxStyle}"
+                                         Text="{Binding NewRegistration, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Text="Tipo ICAO (ej: A320, A20N)" FontSize="11"
+                                           Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,10,0,4"/>
+                                <TextBox Style="{StaticResource DarkTextBoxStyle}"
+                                         Text="{Binding NewIcaoTypeCode, UpdateSourceTrigger=PropertyChanged}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                    <Button Content="Crear aeronave"
+                                            Command="{Binding CreateAircraftCommand}"
+                                            Style="{StaticResource SuccessButtonStyle}" Height="34" Padding="16,0"/>
+                                    <Button Content="Cancelar"
+                                            Command="{Binding ToggleCreateFormCommand}"
+                                            Style="{StaticResource GhostButtonStyle}" Height="34" Padding="16,0" Margin="8,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                </Border>
-                <Border Grid.Column="1" Background="#0D0F14" CornerRadius="8" Padding="12" Margin="0,0,8,0">
-                    <StackPanel>
-                        <TextBlock Text="HORAS" FontSize="9" FontWeight="Bold"
-                                   Foreground="{StaticResource Brush.Text.Secondary}"/>
-                        <TextBlock Text="{Binding TotalFlightHours, StringFormat='{}{0:F1}'}"
-                                   FontSize="22" FontWeight="Bold"
-                                   Foreground="{StaticResource Brush.Text.Primary}" Margin="0,4,0,0"/>
-                        <TextBlock Text="acumuladas" FontSize="10"
-                                   Foreground="{StaticResource Brush.Text.Secondary}"/>
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="2" Background="#0D0F14" CornerRadius="8" Padding="12">
-                    <StackPanel>
-                        <TextBlock Text="FALLAS" FontSize="9" FontWeight="Bold"
-                                   Foreground="{StaticResource Brush.Text.Secondary}"/>
-                        <TextBlock Text="{Binding TotalFailuresTriggered}"
-                                   FontSize="22" FontWeight="Bold"
-                                   Foreground="{StaticResource Brush.Accent.Amber.Primary}" Margin="0,4,0,0"/>
-                        <TextBlock Text="generadas" FontSize="10"
-                                   Foreground="{StaticResource Brush.Text.Secondary}"/>
-                    </StackPanel>
-                </Border>
+                </ScrollViewer>
+
+                <Button Grid.Row="2" Margin="0,12,0,0" Height="40"
+                        Content="+  Crear nueva aeronave"
+                        Command="{Binding ToggleCreateFormCommand}"
+                        Style="{StaticResource GhostButtonStyle}"
+                        Visibility="{Binding ShowCreateForm, Converter={StaticResource InverseBoolToVis}}"/>
             </Grid>
 
-            <!-- Wear bars -->
-            <Border Grid.Row="1" Background="#0D0F14" CornerRadius="8" Padding="14" Margin="0,0,0,16">
-                <StackPanel>
-                    <TextBlock Text="DESGASTE DE SISTEMAS" FontSize="10" FontWeight="Bold"
-                               Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,0,0,12"/>
+            <!-- ================= PASO 2: DASHBOARD ================= -->
+            <Grid Visibility="{Binding IsStep2, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                    <!-- Engine 1 -->
-                    <Grid Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="40"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Motor 1" FontSize="11"
-                                   Foreground="{StaticResource Brush.Text.Secondary}" VerticalAlignment="Center"/>
-                        <ProgressBar Grid.Column="1" Style="{StaticResource WearBarStyle}"
-                                     Minimum="0" Maximum="100"
-                                     Value="{Binding Engine1WearPercent}"
-                                     Foreground="{Binding Engine1WearBrush}"
-                                     VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding Engine1WearPercent, StringFormat='{}{0}%'}"
-                                   FontSize="11" Foreground="{StaticResource Brush.Text.Primary}"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                    </Grid>
+                <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <Button HorizontalAlignment="Left" Content="◀  Volver"
+                            Command="{Binding BackToStep1Command}"
+                            Style="{StaticResource GhostButtonStyle}" Height="30" Padding="12,0"/>
+                    <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+                               Text="{Binding SelectedAircraftTitle}" FontSize="13" FontWeight="Bold"
+                               Foreground="{StaticResource Brush.Text.Primary}"/>
+                </Grid>
 
-                    <!-- Engine 2 -->
-                    <Grid Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="40"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Motor 2" FontSize="11"
-                                   Foreground="{StaticResource Brush.Text.Secondary}" VerticalAlignment="Center"/>
-                        <ProgressBar Grid.Column="1" Style="{StaticResource WearBarStyle}"
-                                     Minimum="0" Maximum="100"
-                                     Value="{Binding Engine2WearPercent}"
-                                     Foreground="{Binding Engine2WearBrush}"
-                                     VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding Engine2WearPercent, StringFormat='{}{0}%'}"
-                                   FontSize="11" Foreground="{StaticResource Brush.Text.Primary}"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                    </Grid>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Stats -->
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Background="#0D0F14" CornerRadius="8" Padding="12" Margin="0,0,8,0">
+                                <StackPanel>
+                                    <TextBlock Text="VUELOS" FontSize="9" FontWeight="Bold" Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                    <TextBlock Text="{Binding DashTotalFlights}" FontSize="22" FontWeight="Bold"
+                                               Foreground="{StaticResource Brush.Text.Primary}" Margin="0,4,0,0"/>
+                                    <TextBlock Text="registrados" FontSize="10" Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="1" Background="#0D0F14" CornerRadius="8" Padding="12" Margin="0,0,8,0">
+                                <StackPanel>
+                                    <TextBlock Text="HORAS" FontSize="9" FontWeight="Bold" Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                    <TextBlock Text="{Binding DashTotalFlightHours, StringFormat='{}{0:F1}'}" FontSize="22" FontWeight="Bold"
+                                               Foreground="{StaticResource Brush.Text.Primary}" Margin="0,4,0,0"/>
+                                    <TextBlock Text="acumuladas" FontSize="10" Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="2" Background="#0D0F14" CornerRadius="8" Padding="12">
+                                <StackPanel>
+                                    <TextBlock Text="FALLAS" FontSize="9" FontWeight="Bold" Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                    <TextBlock Text="{Binding DashTotalFailures}" FontSize="22" FontWeight="Bold"
+                                               Foreground="{StaticResource Brush.Accent.Amber.Primary}" Margin="0,4,0,0"/>
+                                    <TextBlock Text="generadas" FontSize="10" Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
 
-                    <!-- Hydraulics -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="40"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Hidr\u00e1ulico" FontSize="11"
-                                   Foreground="{StaticResource Brush.Text.Secondary}" VerticalAlignment="Center"/>
-                        <ProgressBar Grid.Column="1" Style="{StaticResource WearBarStyle}"
-                                     Minimum="0" Maximum="100"
-                                     Value="{Binding HydraulicsWearPercent}"
-                                     Foreground="{Binding HydraulicsWearBrush}"
-                                     VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding HydraulicsWearPercent, StringFormat='{}{0}%'}"
-                                   FontSize="11" Foreground="{StaticResource Brush.Text.Primary}"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                    </Grid>
+                        <!-- Desgaste -->
+                        <Border Background="#0D0F14" CornerRadius="8" Padding="14" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="DESGASTE DE SISTEMAS" FontSize="10" FontWeight="Bold"
+                                           Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,0,0,12"/>
+                                <ItemsControl ItemsSource="{Binding WearSystems}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type rvm:WearSystemViewModel}">
+                                            <Grid Margin="0,0,0,10">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="44"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="11"
+                                                           Foreground="{StaticResource Brush.Text.Secondary}" VerticalAlignment="Center"/>
+                                                <ProgressBar Grid.Column="1" Style="{StaticResource WearBarStyle}"
+                                                             Minimum="0" Maximum="100" Value="{Binding WearPercentage}"
+                                                             Foreground="{Binding WearBrush}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding PercentDisplay}" FontSize="11"
+                                                           Foreground="{StaticResource Brush.Text.Primary}"
+                                                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Historial de sesiones -->
+                        <TextBlock Text="HISTORIAL DE SESIONES" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,0,0,8"/>
+                        <TextBlock Text="Sin sesiones registradas para esta aeronave."
+                                   FontSize="12" Foreground="{StaticResource Brush.Text.Secondary}"
+                                   Visibility="{Binding HasSessions, Converter={StaticResource InverseBoolToVis}}"/>
+                        <ItemsControl ItemsSource="{Binding Sessions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type rvm:FlightSessionItemViewModel}">
+                                    <Border Background="#0D0F14" BorderBrush="{StaticResource Brush.Border.Default}"
+                                            BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                                        <StackPanel>
+                                            <Button Command="{Binding DataContext.ToggleSessionCommand, ElementName=RealisticRoot}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                                    HorizontalContentAlignment="Stretch">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <ContentPresenter/>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{Binding DateDisplay}" FontSize="12" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource Brush.Text.Primary}"/>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                                            <TextBlock Text="Riesgo: " FontSize="10" Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                                            <TextBlock Text="{Binding RiskLevelDisplay}" FontSize="10" Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                                            <TextBlock Text="  ·  Duración: " FontSize="10" Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                                            <TextBlock Text="{Binding DurationDisplay}" FontSize="10" Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                    <Border Grid.Column="1" Background="#2A1C0A" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                        <TextBlock Text="{Binding FailureCountDisplay}" FontSize="10"
+                                                                   Foreground="{StaticResource Brush.Accent.Amber.Primary}"/>
+                                                    </Border>
+                                                    <TextBlock Grid.Column="2" Text="▾" FontSize="12"
+                                                               Foreground="{StaticResource Brush.Text.Secondary}" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Button>
+
+                                            <!-- Resumen expandido: fallas -->
+                                            <StackPanel Margin="0,10,0,0"
+                                                        Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                                                <Border Background="#111318" CornerRadius="6" Padding="10"
+                                                        Visibility="{Binding HasFailures, Converter={StaticResource BoolToVis}}">
+                                                    <ItemsControl ItemsSource="{Binding TriggeredFailures}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate DataType="{x:Type rvm:TriggeredFailureItemViewModel}">
+                                                                <Grid Margin="0,2">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <TextBlock Grid.Column="0" Text="{Binding TimeDisplay}" FontSize="11"
+                                                                               FontFamily="Consolas" Foreground="{StaticResource Brush.Text.Secondary}"/>
+                                                                    <Border Grid.Column="1" Background="#1A2540" CornerRadius="4" Padding="5,1" Margin="8,0">
+                                                                        <TextBlock Text="{Binding FlightPhaseName}" FontSize="10"
+                                                                                   Foreground="{StaticResource Brush.Accent.Blue.Primary}"/>
+                                                                    </Border>
+                                                                    <TextBlock Grid.Column="2" Text="{Binding FailureName}" FontSize="11"
+                                                                               Foreground="{StaticResource Brush.Text.Primary}" VerticalAlignment="Center"/>
+                                                                </Grid>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </Border>
+                                                <TextBlock Text="Sin fallas disparadas en esta sesión." FontSize="11"
+                                                           Foreground="{StaticResource Brush.Text.Secondary}"
+                                                           Visibility="{Binding HasFailures, Converter={StaticResource InverseBoolToVis}}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Button Grid.Row="2" Margin="0,12,0,0" Height="42"
+                        Content="Continuar a nivel de riesgo  ▶"
+                        Command="{Binding ContinueToRiskCommand}"
+                        Style="{StaticResource PrimaryButtonStyle}"/>
+            </Grid>
+
+            <!-- ================= PASO 3: NIVEL DE RIESGO ================= -->
+            <Grid Visibility="{Binding IsStep3, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <Button HorizontalAlignment="Left" Content="◀  Volver"
+                            Command="{Binding BackToStep2Command}"
+                            Style="{StaticResource GhostButtonStyle}" Height="30" Padding="12,0"/>
+                    <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+                               Text="PASO 3 · NIVEL DE RIESGO" FontSize="10" FontWeight="Bold"
+                               Foreground="{StaticResource Brush.Text.Secondary}"/>
+                </Grid>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Nivel 1 Bajo -->
+                        <Button Style="{StaticResource CardButtonStyle}"
+                                Command="{Binding SelectRiskCommand}" CommandParameter="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0" Width="12" Height="12" Fill="#4CAF50" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Nivel 1 · Bajo" FontSize="14" FontWeight="Bold" Foreground="{StaticResource Brush.Text.Primary}"/>
+                                    <TextBlock Text="Fallas menores, sistemas secundarios. Ideal para vuelos tranquilos."
+                                               FontSize="11" Foreground="{StaticResource Brush.Text.Secondary}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="✔" FontSize="16" Foreground="#4CAF50" VerticalAlignment="Center"
+                                           Visibility="{Binding IsRiskLowSelected, Converter={StaticResource BoolToVis}}"/>
+                            </Grid>
+                        </Button>
+
+                        <!-- Nivel 2 Moderado -->
+                        <Button Style="{StaticResource CardButtonStyle}"
+                                Command="{Binding SelectRiskCommand}" CommandParameter="2">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0" Width="12" Height="12" Fill="#F59E0B" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Nivel 2 · Moderado" FontSize="14" FontWeight="Bold" Foreground="{StaticResource Brush.Text.Primary}"/>
+                                    <TextBlock Text="Fallas de sistemas principales con baja probabilidad de emergencia."
+                                               FontSize="11" Foreground="{StaticResource Brush.Text.Secondary}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="✔" FontSize="16" Foreground="#F59E0B" VerticalAlignment="Center"
+                                           Visibility="{Binding IsRiskModerateSelected, Converter={StaticResource BoolToVis}}"/>
+                            </Grid>
+                        </Button>
+
+                        <!-- Nivel 3 Alto -->
+                        <Button Style="{StaticResource CardButtonStyle}"
+                                Command="{Binding SelectRiskCommand}" CommandParameter="3">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0" Width="12" Height="12" Fill="#EF4444" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Nivel 3 · Alto" FontSize="14" FontWeight="Bold" Foreground="{StaticResource Brush.Text.Primary}"/>
+                                    <TextBlock Text="Fallas críticas posibles. Requiere manejo activo de emergencias."
+                                               FontSize="11" Foreground="{StaticResource Brush.Text.Secondary}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="✔" FontSize="16" Foreground="#EF4444" VerticalAlignment="Center"
+                                           Visibility="{Binding IsRiskHighSelected, Converter={StaticResource BoolToVis}}"/>
+                            </Grid>
+                        </Button>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Button Grid.Row="2" Margin="0,12,0,0" Height="42"
+                        Content="Continuar a activación  ▶"
+                        Command="{Binding ContinueToActivateCommand}"
+                        IsEnabled="{Binding HasSelectedRisk}"
+                        Style="{StaticResource PrimaryButtonStyle}"/>
+            </Grid>
+
+            <!-- ================= PASO 4: ACTIVAR ================= -->
+            <Grid Visibility="{Binding IsStep4, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <Button HorizontalAlignment="Left" Content="◀  Volver"
+                            Command="{Binding BackToStep3Command}"
+                            Style="{StaticResource GhostButtonStyle}" Height="30" Padding="12,0"/>
+                    <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+                               Text="PASO 4 · ACTIVAR MODO REALISTA" FontSize="10" FontWeight="Bold"
+                               Foreground="{StaticResource Brush.Text.Secondary}"/>
+                </Grid>
+
+                <StackPanel Grid.Row="1">
+                    <!-- Resumen -->
+                    <Border Background="#0D0F14" CornerRadius="8" Padding="14" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="RESUMEN" FontSize="10" FontWeight="Bold"
+                                       Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,0,0,10"/>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Aeronave" FontSize="12" Foreground="{StaticResource Brush.Text.Secondary}" HorizontalAlignment="Left"/>
+                                <TextBlock Text="{Binding SelectedAircraftTitle}" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Brush.Text.Primary}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid>
+                                <TextBlock Text="Nivel de riesgo" FontSize="12" Foreground="{StaticResource Brush.Text.Secondary}" HorizontalAlignment="Left"/>
+                                <TextBlock Text="{Binding SelectedRiskDisplay}" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Brush.Text.Primary}" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Estado de conexión / fase -->
+                    <Border Background="#0D0F14" CornerRadius="8" Padding="14">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="MSFS (SimConnect)" FontSize="11" Foreground="{StaticResource Brush.Text.Secondary}" HorizontalAlignment="Left"/>
+                                <TextBlock FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Desconectado"/>
+                                            <Setter Property="Foreground" Value="{StaticResource Brush.Accent.Red.Primary}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSimConnected}" Value="True">
+                                                    <Setter Property="Text" Value="Conectado"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource Brush.Accent.Green.Primary}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Fenix System" FontSize="11" Foreground="{StaticResource Brush.Text.Secondary}" HorizontalAlignment="Left"/>
+                                <TextBlock FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Desconectado"/>
+                                            <Setter Property="Foreground" Value="{StaticResource Brush.Accent.Red.Primary}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsFenixConnected}" Value="True">
+                                                    <Setter Property="Text" Value="Conectado"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource Brush.Accent.Green.Primary}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                            <Grid>
+                                <TextBlock Text="Fase de vuelo" FontSize="11" Foreground="{StaticResource Brush.Text.Secondary}" HorizontalAlignment="Left"/>
+                                <TextBlock Text="{Binding CurrentFlightPhaseDisplay}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Brush.Accent.Blue.Primary}" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
-            </Border>
 
-            <!-- Connection warning -->
-            <Border Grid.Row="2"
-                    Background="#2A1C0A" BorderBrush="#F59E0B" BorderThickness="1"
-                    CornerRadius="8" Padding="12"
-                    Visibility="{Binding ShowConnectionWarning, Converter={StaticResource BoolToVis}}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="⚠" FontSize="16" Foreground="{StaticResource Brush.Accent.Amber.Primary}"
-                               VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <TextBlock Text="Conectá MSFS 2024 y Fenix A320 para activar el modo realista."
-                               FontSize="12" Foreground="{StaticResource Brush.Accent.Amber.Primary}"
-                               TextWrapping="Wrap" VerticalAlignment="Center"/>
+                <StackPanel Grid.Row="2" Margin="0,12,0,0">
+                    <!-- Mensaje explicativo cuando está deshabilitado -->
+                    <Border Background="#2A1C0A" BorderBrush="#F59E0B" BorderThickness="1"
+                            CornerRadius="8" Padding="12" Margin="0,0,0,10"
+                            Visibility="{Binding HasActivationBlockReason, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚠" FontSize="16" Foreground="{StaticResource Brush.Accent.Amber.Primary}"
+                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBlock Text="{Binding ActivationBlockReason}" FontSize="12"
+                                       Foreground="{StaticResource Brush.Accent.Amber.Primary}"
+                                       TextWrapping="Wrap" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Height="48"
+                            Command="{Binding ActivateCommand}"
+                            ToolTip="{Binding ActivationBlockReason}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SuccessButtonStyle}">
+                                <!-- Habilitado según validaciones; el trigger fuerza habilitado cuando está activo (para poder DETENER). -->
+                                <Setter Property="IsEnabled" Value="{Binding CanActivate}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsEngineActive}" Value="True">
+                                        <Setter Property="Background" Value="#7F1D1D"/>
+                                        <Setter Property="IsEnabled" Value="True"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="16" Margin="0,0,10,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="⏵"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsEngineActive}" Value="True">
+                                                <Setter Property="Text" Value="⏹"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding ActivateButtonText}" VerticalAlignment="Center"
+                                       FontSize="13" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
-            </Border>
+            </Grid>
         </Grid>
-
-        <!-- Toggle button -->
-        <Button Grid.Row="2" Height="48" Margin="0,16,0,0"
-                Command="{Binding ToggleRealisticModeCommand}"
-                IsEnabled="{Binding CanStartEngine}">
-            <Button.Style>
-                <Style TargetType="Button" BasedOn="{StaticResource SuccessButtonStyle}">
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsEngineActive}" Value="True">
-                            <Setter Property="Background" Value="#7F1D1D"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Button.Style>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock VerticalAlignment="Center" FontSize="16" Margin="0,0,10,0">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Text" Value="⏵"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsEngineActive}" Value="True">
-                                    <Setter Property="Text" Value="⏹"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
-                <TextBlock VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Text" Value="ACTIVAR MODO REALISTA"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsEngineActive}" Value="True">
-                                    <Setter Property="Text" Value="DETENER MODO REALISTA"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
-            </StackPanel>
-        </Button>
     </Grid>
 </UserControl>

@@ -114,7 +114,6 @@ public class SimulatorConnectionService : ISimulatorConnectionService {
     }
 
     private FlightPhaseEnum DetermineFlightPhase(SimulatorAircraftState state) {
-        _logger.LogDebug("SimAircraftState: {@state}", state);
         if (state.IsOnGround) {
             if (state.Engine1Running || state.Engine2Running) {
                 if (state.GroundSpeed > 5)
@@ -124,7 +123,7 @@ public class SimulatorConnectionService : ISimulatorConnectionService {
                 else
                     return FlightPhaseEnum.Parked;
             } else {
-                return FlightPhaseEnum.Parked;
+                return FlightPhaseEnum.ColdAndDark;
             }
         } else {
             if (state.Altitude < 10000) {
