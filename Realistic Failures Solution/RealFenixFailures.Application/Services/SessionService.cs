@@ -12,11 +12,11 @@ public class SessionService : ISessionService {
         _sessionRepository = sessionRepository;
     }
 
-    public async Task<FlightSession> StartSessionAsync(RiskLevel risk, int userAircraftId, CancellationToken cancellationToken) {
+    public async Task<FlightSession> StartSessionAsync(RiskLevel risk, UserAircraft aircraft, CancellationToken cancellationToken) {
         var session = new FlightSession {
-            StartedAtUtc = DateTimeOffset.UtcNow,
+            StartedAt = DateTimeOffset.UtcNow,
             RiskLevel = (int)risk,
-            UserAircraftId = userAircraftId,
+            UserAircraftId = aircraft.Id,
         };
 
         await _sessionRepository.AddAsync(session, cancellationToken);

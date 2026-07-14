@@ -4,5 +4,5 @@ using RealFenixFailures.Domain.Enums;
 namespace RealFenixFailures.Application.Interfaces;
 
 public interface ISessionService {
-    Task<FlightSession> StartSessionAsync(RiskLevel risk, int userAircraftId, CancellationToken cancellationToken);
+    Task<FlightSession> StartSessionAsync(RiskLevel risk, UserAircraft aircraft, CancellationToken cancellationToken);
 }

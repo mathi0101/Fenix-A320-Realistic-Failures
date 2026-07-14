@@ -471,7 +471,7 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
 
         if (IsAnyModeActive) return;
 
-        await _orchestrator.StartRealisticModeAsync(RiskLevel.Moderate, CancellationToken.None);
+        await _orchestrator.StartRealisticModeAsync(0, RiskLevel.Moderate, CancellationToken.None);
 
         ActiveMode = UserAppMode.Realistic;
         _logger.LogInformation("Realistic mode activated (orchestrator handles polling/triggers).");

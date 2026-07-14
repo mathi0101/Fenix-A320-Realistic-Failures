@@ -31,7 +31,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
     private PeriodicTimer? _realisticEngineTimer;
 
     private FailurePreset? _activePreset;
-    private FlightSession? _activeSession;
 
     private PeriodicTimer? _automaticTimer;
     private CancellationTokenSource? _automaticTimerCts;
@@ -42,7 +41,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
     #region TrackedProperties
 
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     private bool isEngineActive;
     private bool isTimerRunning;
@@ -87,6 +85,15 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
             }
         }
     }
+
+    #region INotifyPropertyChanged
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged(string propertyName) {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    #endregion
 
     #endregion
 
@@ -168,7 +175,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
     #region Realistic Mode
 
-    public async Task StartRealisticModeAsync(RiskLevel risk, CancellationToken ct) {
+    public async Task StartRealisticModeAsync(int aircraftId, RiskLevel risk, CancellationToken ct) {
         await _operationLock.WaitAsync(ct);
         try {
             if (!ConnectionStatus.IsSimConnectConnected || !ConnectionStatus.IsFenixConnected) {
@@ -180,21 +187,23 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 return;
             }
 
-            var aircraft = await _userAircraftService.GetOrCreateDefaultAsync(ct);
-            _activeSession = await _sessionService.StartSessionAsync(risk, aircraft.Id, ct);
+            var aircraft = await _userAircraftService.GetAircraftById(aircraftId, ct);
+            if (aircraft == null) {
+                _logger.LogWarning("User Aircraft id: {a} Not Found", aircraftId);
+                return;
+            }
 
-            var systemWears = await _userAircraftService.GetSystemWearsAsync(aircraft.Id, ct);
+            //var systemWears = await _userAircraftService.GetSystemWearsAsync(aircraft.Id, ct);
 
             var context = new RealisticSessionContext(
-                aircraft,
-                _activeSession,
-                systemWears
+                risk,
+                aircraft
             );
 
             CurrentMode = UserAppMode.Realistic;
             IsEngineActive = true;
 
-            await _realisticSessionManager.StartAsync(context, ct);
+            await _realisticSessionManager.StartNewSessionAsync(context, ct);
 
             _logger.LogInformation("Realistic mode started for aircraft {Registration}. RealisticSessionManager will select from available presets.",
                 aircraft.Registration);
@@ -225,7 +234,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 return;
             }
 
-            var armedFailures = await _simulatorConnectionService.ExecutePresetAsync(_activePreset, _activeSession, ct);
+            var armedFailures = await _simulatorConnectionService.ExecutePresetAsync(_activePreset, ct);
 
             if (!armedFailures.IsSuccess) {
                 _recentLogs.Add(new FailureTriggerLogDto(DateTime.UtcNow, "", "Error al activar preset", _activePreset.FlightPhase, _activePreset.Name));
@@ -276,7 +285,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
             if (activateImmediately) {
                 foreach (var def in _activePreset.PresetFailureDefinitions) {
-                    await _simulatorConnectionService.ExecuteFailureAsync(def, _activeSession, ct);
+                    await _simulatorConnectionService.ExecuteFailureAsync(def, ct);
 
                     var log = new FailureTriggerLogDto(
                         DateTimeOffset.UtcNow,
@@ -289,7 +298,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
                 StartPolling();
             } else {
-                var armedFailures = await _simulatorConnectionService.ExecutePresetAsync(_activePreset, _activeSession, ct);
+                var armedFailures = await _simulatorConnectionService.ExecutePresetAsync(_activePreset, ct);
 
                 if (!armedFailures.IsSuccess) {
                     _recentLogs.Add(new FailureTriggerLogDto(DateTime.UtcNow, "", "Error al activar preset", _activePreset.FlightPhase, _activePreset.Name));
@@ -335,7 +344,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
             await _simulatorConnectionService.ResetAllFailuresAsync(ct);
 
             _activePreset = null;
-            _activeSession = null;
             _activeScenarioFailures.Clear();
 
             CurrentMode = UserAppMode.None;
@@ -349,14 +357,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
     public Task<List<FailureTriggerLogDto>> GetRecentFailuresAsync(CancellationToken ct) {
         return Task.FromResult(_recentLogs.OrderByDescending(x => x.TriggeredAtUtc).Take(100).ToList());
-    }
-
-    public Task<bool> IsPresetArmedAsync(CancellationToken ct) {
-        if (CurrentMode == UserAppMode.Training && _activePreset != null) {
-            return Task.FromResult(true);
-        }
-
-        return Task.FromResult(false);
     }
 
     #endregion
@@ -391,46 +391,17 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
     }
 
     private async Task PollAndTriggerAsync(CancellationToken ct) {
-        if (!IsEngineActive || _activePreset == null || _activeSession == null)
+        if (!IsEngineActive || _activePreset == null)
             return;
 
         if (!connectionStatus.IsSimConnectConnected || !connectionStatus.IsFenixConnected)
             return;
 
+        throw new NotImplementedException();
+
         await _operationLock.WaitAsync(ct);
         try {
             var phase = connectionStatus.CurrentFlightPhase;
-
-            if (CurrentMode == UserAppMode.Realistic) {
-                var trigger = _failureTrigger.TryTriggerFailure(
-                    _activePreset,
-                    phase,
-                    0.2,
-                    DateTimeOffset.UtcNow);
-
-                if (trigger != null) {
-                    trigger.FlightSessionId = _activeSession.Id;
-
-                    var failureDef = _activePreset.PresetFailureDefinitions
-                        .FirstOrDefault(x => x.FenixFailure?.FenixFailureId == trigger.FenixFailureId);
-
-                    if (failureDef?.FenixFailure != null) {
-                        await _simulatorConnectionService.ExecuteFailureAsync(failureDef, _activeSession, ct);
-
-                        var log = new FailureTriggerLogDto(
-                            trigger.TriggeredAtUtc,
-                            failureDef.FenixFailureId,
-                            failureDef.FenixFailure.Name,
-                            phase,
-                            _activePreset.Name);
-                        _recentLogs.Add(log);
-
-                        _logger.LogInformation("Triggered random failure: {FailureName} at phase {Phase}",
-                            failureDef.FenixFailure.Name, phase);
-                    }
-                }
-            } else if (CurrentMode == UserAppMode.Custom && _activePreset.PresetType == PresetTypeEnum.Custom) {
-            }
         } catch (Exception ex) {
             _logger.LogError(ex, "Error while polling for failure triggers.");
         } finally {
@@ -440,13 +411,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
     #endregion
 
-    #region INotifyPropertyChanged
-
-    protected virtual void OnPropertyChanged(string propertyName) {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    #endregion
+    #region Dispose
 
     public void Dispose() {
         _realisticEngineCts.Cancel();
@@ -454,4 +419,5 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
         _operationLock.Dispose();
         _realisticEngineCts.Dispose();
     }
+    #endregion
 }

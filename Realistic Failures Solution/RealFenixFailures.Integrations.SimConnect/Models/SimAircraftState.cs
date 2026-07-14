@@ -9,7 +9,7 @@ public class SimAircraftState {
     public int Altitude { get; set; } // pies
     public int Heading { get; set; } // grados
     public int GroundSpeed { get; set; } // nudos
-    public int AirspeedTrue { get; set; } // nudos
+    public int TrueAirspeed { get; set; } // nudos
     public int VerticalSpeed { get; set; } // pies/minuto
 
     // Estado de vuelo
@@ -40,7 +40,7 @@ public class SimAircraftState {
             Altitude = Altitude,
             Heading = Heading,
             GroundSpeed = GroundSpeed,
-            AirspeedTrue = AirspeedTrue,
+            TrueAirspeed = TrueAirspeed,
             VerticalSpeed = VerticalSpeed,
             IsOnGround = IsOnGround,
             FlapsHandleIndex = FlapsHandleIndex,

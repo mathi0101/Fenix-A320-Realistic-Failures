@@ -153,7 +153,6 @@ public class RealFenixDbContext : DbContext {
             entity.HasKey(x => x.Id);
             entity.HasOne(x => x.FlightSession).WithMany(x => x.TriggeredFailures).HasForeignKey(x => x.FlightSessionId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(x => x.FenixFailure).WithMany().HasForeignKey(x => x.FenixFailureId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(x => x.Preset).WithMany().HasForeignKey(x => x.PresetId).OnDelete(DeleteBehavior.Restrict);
         });
 
         SeedData.Apply(modelBuilder);

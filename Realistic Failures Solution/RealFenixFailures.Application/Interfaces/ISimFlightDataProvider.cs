@@ -1,8 +1,8 @@
-using RealFenixFailures.Domain.Enums;
+using RealFenixFailures.Application.DTOs;
 
 namespace RealFenixFailures.Application.Interfaces;
 
 public interface ISimFlightDataProvider {
     Task<bool> IsConnectedAsync(CancellationToken ct);
-    Task<FlightPhaseEnum> GetCurrentFlightPhaseAsync(CancellationToken ct);
+    Task<SimulatorAircraftState> GetAircraftRawData(CancellationToken ct);
 }

@@ -1,75 +1,103 @@
 using Microsoft.Extensions.Logging;
 using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.Application.Interfaces;
-using RealFenixFailures.Domain.Entities;
-using RealFenixFailures.Domain.Enums;
+using RealFenixFailures.Application.Session;
+using System.ComponentModel;
 
 namespace RealFenixFailures.Application.Services;
 
+/// <summary>
+/// Owns the realistic-session lifecycle: start/stop/pause/resume, the periodic evaluation timer,
+/// and event dispatch. All failure-evaluation logic is delegated to a <see cref="SessionEvaluatorEngine"/>
+/// instance that is created when a session starts and discarded when it stops.
+/// </summary>
 public class RealisticSessionManager : IRealisticSessionManager {
+    #region Fields
     private readonly ILogger<RealisticSessionManager> _logger;
-    private readonly ISimulatorConnectionService _simulatorConnectionService;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly ISimulatorConnectionService _simulator;
     private readonly IPresetService _presetService;
-    private RealisticSessionState? _sessionState;
+    private readonly ISessionService _sessionService;
+
+    private SessionEvaluatorEngine? _engine;
     private PeriodicTimer? _evaluationTimer;
     private CancellationTokenSource? _evaluationCts;
-    private readonly ReaderWriterLockSlim _stateLock = new();
-    private const int EvaluationIntervalSeconds = 5;
+    private const int EvaluationIntervalSeconds = 30;
+    #endregion
 
+    #region Events
     public event EventHandler<FailureTriggeredEventArgs>? FailureTriggered;
     public event EventHandler<SessionErrorEventArgs>? SessionError;
+    #region INotifyPropertyChanged
+    public event PropertyChangedEventHandler? PropertyChanged;
 
-    public RealisticSessionManager(
-        ILogger<RealisticSessionManager> logger,
-        ISimulatorConnectionService simulatorConnectionService,
-        IPresetService presetService) {
-        _logger = logger;
-        _simulatorConnectionService = simulatorConnectionService;
-        _presetService = presetService;
+    protected virtual void OnPropertyChanged(string propertyName) {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public async Task StartAsync(RealisticSessionContext context, CancellationToken ct) {
-        try {
-            _stateLock.EnterWriteLock();
-            try {
-                _sessionState = new RealisticSessionState {
-                    Session = context.Session,
-                    Aircraft = context.Aircraft
-                };
-            } finally {
-                _stateLock.ExitWriteLock();
-            }
+    #endregion
+    #endregion
 
-            await InitializeAvailablePresetsAsync(ct);
+    #region Properties
+    private RealisticSessionState? _sessionState;
+    public RealisticSessionState? SessionState {
+        get => _sessionState;
+        set => _sessionState = value;
+    }
+    #endregion
+
+    #region Constructor
+    public RealisticSessionManager(
+        ILogger<RealisticSessionManager> logger,
+        ILoggerFactory loggerFactory,
+        ISimulatorConnectionService simulatorConnectionService,
+        IPresetService presetService,
+        ISessionService sessionService) {
+        _logger = logger;
+        _loggerFactory = loggerFactory;
+        _simulator = simulatorConnectionService;
+        _presetService = presetService;
+        _sessionService = sessionService;
+    }
+    #endregion
+
+    #region Session Commands
+    public async Task<ServiceResult<string>> StartNewSessionAsync(RealisticSessionContext context, CancellationToken ct) {
+        if (SessionState != null) throw new InvalidOperationException();
+        try {
+            // Create the evaluation engine for this session. It owns all evaluation logic and mutates
+            // the shared RealisticSessionState instance directly.
+            _engine = new SessionEvaluatorEngine(
+                _simulator,
+                _loggerFactory.CreateLogger<SessionEvaluatorEngine>(),
+                _sessionService,
+                _presetService);
+
+            var result = await _engine.TryStartSession(context, ct);
+            if (result.Started == false) {
+                return ServiceResult<string>.Fail(new InvalidOperationException(), result.Text);
+            }
 
             _evaluationCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             _evaluationTimer = new PeriodicTimer(TimeSpan.FromSeconds(EvaluationIntervalSeconds));
             _ = Task.Run(() => RunEvaluationLoopAsync(_evaluationCts.Token), _evaluationCts.Token);
-
             _logger.LogInformation("Realistic session started for aircraft {Registration}", context.Aircraft.Registration);
+            return ServiceResult<string>.Ok($"Realistic session started for aircraft {context.Aircraft.Registration}");
         } catch (Exception ex) {
             _logger.LogError(ex, "Error starting realistic session");
             SessionError?.Invoke(this, new SessionErrorEventArgs { Message = "Failed to start realistic session", Exception = ex });
+            return ServiceResult<string>.Fail(ex, "Failed to start realistic session");
         }
     }
 
-    public async Task StopAsync(CancellationToken ct) {
-        try {
-            _evaluationCts?.Cancel();
-            _evaluationTimer?.Dispose();
-            _evaluationTimer = null;
-
-            _stateLock.EnterWriteLock();
-            try {
-                _sessionState = null;
-            } finally {
-                _stateLock.ExitWriteLock();
-            }
-
-            _logger.LogInformation("Realistic session stopped");
-        } catch (Exception ex) {
-            _logger.LogError(ex, "Error stopping realistic session");
-        }
+    public Task StopAsync(CancellationToken ct) {
+        _evaluationCts?.Cancel();
+        _evaluationTimer?.Dispose();
+        _evaluationTimer = null;
+        _engine = null;
+        SessionState = null;
+        _logger.LogInformation("Realistic session stopped");
+        return Task.CompletedTask;
     }
 
     public Task PauseAsync(CancellationToken ct) {
@@ -83,49 +111,17 @@ public class RealisticSessionManager : IRealisticSessionManager {
             _evaluationCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             _evaluationTimer = new PeriodicTimer(TimeSpan.FromSeconds(EvaluationIntervalSeconds));
             _ = Task.Run(() => RunEvaluationLoopAsync(_evaluationCts.Token), _evaluationCts.Token);
-
             _logger.LogInformation("Realistic session resumed");
         } catch (Exception ex) {
             _logger.LogError(ex, "Error resuming realistic session");
             SessionError?.Invoke(this, new SessionErrorEventArgs { Message = "Failed to resume session", Exception = ex });
         }
     }
+    #endregion
 
-    public async Task RemoveTemporaryFailuresAsync(CancellationToken ct) {
-        try {
-            _stateLock.EnterReadLock();
-            try {
-                if (_sessionState == null) return;
-
-                var temporaryFailures = _sessionState.ActiveFailures.ToList();
-                foreach (var failure in temporaryFailures) {
-                    _sessionState.ActiveFailures.Remove(failure.Key);
-                }
-            } finally {
-                _stateLock.ExitReadLock();
-            }
-
-            _logger.LogInformation("Temporary failures removed");
-        } catch (Exception ex) {
-            _logger.LogError(ex, "Error removing temporary failures");
-        }
-    }
-
-    private async Task InitializeAvailablePresetsAsync(CancellationToken ct) {
-        if (_sessionState is null) return;
-
-        try {
-            _sessionState.AvailablePresets = (await _presetService.GetRealisticPresetsAsync(ct)).ToList();
-            _logger.LogInformation("Loaded {Count} realistic presets for session", _sessionState.AvailablePresets.Count);
-        } catch (Exception ex) {
-            _logger.LogError(ex, "Error loading realistic presets");
-            SessionError?.Invoke(this, new SessionErrorEventArgs { Message = "Failed to load presets", Exception = ex });
-        }
-    }
-
+    #region Loop Session Timer
     private async Task RunEvaluationLoopAsync(CancellationToken ct) {
         if (_evaluationTimer == null) return;
-
         try {
             while (await _evaluationTimer.WaitForNextTickAsync(ct) && !ct.IsCancellationRequested) {
                 await EvaluateAndExecuteAsync(ct);
@@ -136,88 +132,34 @@ public class RealisticSessionManager : IRealisticSessionManager {
             _logger.LogError(ex, "Unexpected error in evaluation loop");
         }
     }
+    #endregion
 
+    #region Main Timer Tick Session Evaluator
     private async Task EvaluateAndExecuteAsync(CancellationToken ct) {
-        _stateLock.EnterReadLock();
+        if (SessionState == null || _engine == null) return;
         try {
-            if (_sessionState == null) return;
+            var result = await _engine.EvaluateAsync(ct);
 
-            var connectionStatus = await _simulatorConnectionService.GetConnectionStatusAsync(ct);
-            var currentPhase = connectionStatus.CurrentFlightPhase;
+            if (result.ShouldPauseSession) {
+                await PauseAsync(CancellationToken.None);
+                return;
+            }
 
-            var applicablePresets = SelectApplicablePresets(currentPhase);
-            foreach (var preset in applicablePresets) {
-                var candidateFailures = FilterCandidateFailuresByPreset(preset, currentPhase);
-                foreach (var failure in candidateFailures) {
-                    if (ShouldTriggerFailure(failure)) {
-                        await TriggerFailureAsync(failure, preset, ct);
-                    }
-                }
+            foreach (var triggered in result.TriggeredFailures) {
+                FailureTriggered?.Invoke(this, new FailureTriggeredEventArgs {
+                    FenixFailureId = triggered.FenixFailureId,
+                    Description = triggered.Description,
+                    TriggeredAtUtc = triggered.TriggeredAtUtc
+                });
             }
         } catch (Exception ex) {
             _logger.LogError(ex, "Error during evaluation");
-        } finally {
-            _stateLock.ExitReadLock();
+            SessionError?.Invoke(this, new SessionErrorEventArgs { Message = "Error during evaluation", Exception = ex });
         }
     }
+    #endregion
 
-    private List<FailurePreset> SelectApplicablePresets(FlightPhaseEnum phase) {
-        if (_sessionState == null) return new();
+    #region Privates
 
-        return _sessionState.AvailablePresets
-            .Where(p => !_sessionState.ExecutedPresets.Contains(p) && IsApplicableToPhase(p, phase))
-            .ToList();
-    }
-
-    private List<PresetFailureDefinition> FilterCandidateFailuresByPreset(FailurePreset preset, FlightPhaseEnum phase) {
-        if (_sessionState == null) return new();
-
-        return preset.PresetFailureDefinitions
-            .Where(def => !_sessionState.ExecutedFailureIds.Contains(def.FenixFailureId.GetHashCode()))
-            .ToList();
-    }
-
-    private bool IsApplicableToPhase(FailurePreset preset, FlightPhaseEnum currentPhase) {
-        return preset.FlightPhase == currentPhase;
-    }
-
-    private bool ShouldTriggerFailure(PresetFailureDefinition failure) {
-        if (_sessionState == null) return false;
-
-        var timeSinceLastFailure = DateTimeOffset.UtcNow - _sessionState.LastFailureTriggeredAtUtc;
-        if (timeSinceLastFailure.TotalSeconds < 10) {
-            return false;
-        }
-
-        var baseProbability = 0.1;
-        var random = new Random().NextDouble();
-        return random < baseProbability;
-    }
-
-    private async Task TriggerFailureAsync(PresetFailureDefinition failure, FailurePreset preset, CancellationToken ct) {
-        if (_sessionState == null) return;
-
-        try {
-            _sessionState.ExecutedFailureIds.Add(failure.FenixFailureId.GetHashCode());
-            _sessionState.ActiveFailures[failure.FenixFailureId.GetHashCode()] = DateTimeOffset.UtcNow;
-            _sessionState.LastFailureTriggeredAtUtc = DateTimeOffset.UtcNow;
-            _sessionState.FailureCount++;
-
-            if (!_sessionState.ExecutedPresets.Contains(preset)) {
-                _sessionState.ExecutedPresets.Add(preset);
-            }
-
-            FailureTriggered?.Invoke(this, new FailureTriggeredEventArgs {
-                FenixFailureId = failure.FenixFailureId,
-                Description = failure.FenixFailure?.Name ?? "Unknown failure",
-                TriggeredAtUtc = DateTimeOffset.UtcNow
-            });
-
-            _logger.LogInformation("Triggered failure {FailureId} from preset {PresetName}",
-                failure.FenixFailureId, preset.Name);
-        } catch (Exception ex) {
-            _logger.LogError(ex, "Error triggering failure");
-            SessionError?.Invoke(this, new SessionErrorEventArgs { Message = "Failed to trigger failure", Exception = ex });
-        }
-    }
+    #endregion
 }

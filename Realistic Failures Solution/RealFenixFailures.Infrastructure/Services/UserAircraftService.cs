@@ -1,7 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using RealFenixFailures.Application.Interfaces;
 using RealFenixFailures.Domain.Entities;
 using RealFenixFailures.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace RealFenixFailures.Infrastructure.Services;
 
@@ -11,6 +11,16 @@ public class UserAircraftService : IUserAircraftService {
     public UserAircraftService(RealFenixDbContext dbContext) {
         _dbContext = dbContext;
     }
+
+    #region Get
+
+    public async Task<UserAircraft?> GetAircraftById(int userAircraftId, CancellationToken ct) {
+        return await _dbContext.UserAircrafts
+            .Include(x => x.SystemWears)
+            .FirstOrDefaultAsync(x => x.Id == userAircraftId, ct);
+    }
+
+    #endregion
 
     public async Task<UserAircraft> GetOrCreateDefaultAsync(CancellationToken ct) {
         var defaultAircraft = await _dbContext.UserAircrafts

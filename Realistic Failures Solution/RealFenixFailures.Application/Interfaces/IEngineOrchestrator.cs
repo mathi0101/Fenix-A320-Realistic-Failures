@@ -17,7 +17,7 @@ public interface IEngineOrchestrator : INotifyPropertyChanged {
     bool IsTimerRunning { get; }
 
     // Métodos para controlar el motor de fallas
-    Task StartRealisticModeAsync(RiskLevel risk, CancellationToken ct);
+    Task StartRealisticModeAsync(int aircraftId, RiskLevel risk, CancellationToken ct);
     Task StartTrainingPresetAsync(int presetId, CancellationToken ct);
     Task StartCustomModeAsync(int presetId, bool activateImmediately, CancellationToken ct);
 
@@ -25,7 +25,4 @@ public interface IEngineOrchestrator : INotifyPropertyChanged {
 
     // Método para obtener el historial de fallas recientes
     Task<List<FailureTriggerLogDto>> GetRecentFailuresAsync(CancellationToken ct);
-
-    // Método para verificar el estado del preset activo (para modo entrenamiento)
-    Task<bool> IsPresetArmedAsync(CancellationToken ct);
 }

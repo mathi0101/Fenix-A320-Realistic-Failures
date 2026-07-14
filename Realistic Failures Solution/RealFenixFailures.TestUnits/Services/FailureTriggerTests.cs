@@ -87,9 +87,8 @@ public class FailureTriggerTests {
         // Assert
         Assert.NotNull(result);
         Assert.Equal("FID1", result!.FenixFailureId);
-        Assert.Equal(1, result.PresetId);
         Assert.Equal(FlightPhaseEnum.Cruise, result.FlightPhase);
-        Assert.Equal(timestamp, result.TriggeredAtUtc);
+        Assert.Equal(timestamp, result.TriggeredAt);
     }
 
     [Fact]

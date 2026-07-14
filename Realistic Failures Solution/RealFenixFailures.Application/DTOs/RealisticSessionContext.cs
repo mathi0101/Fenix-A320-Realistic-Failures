@@ -1,9 +1,9 @@
 using RealFenixFailures.Domain.Entities;
+using RealFenixFailures.Domain.Enums;
 
 namespace RealFenixFailures.Application.DTOs;
 
 public record RealisticSessionContext(
-    UserAircraft Aircraft,
-    FlightSession Session,
-    IReadOnlyList<AircraftSystemWear> CurrentSystemWears
+    RiskLevel RiskLevel,
+    UserAircraft Aircraft
 );

@@ -1,13 +1,13 @@
 using RealFenixFailures.Application.DTOs;
+using System.ComponentModel;
 
 namespace RealFenixFailures.Application.Interfaces;
 
-public interface IRealisticSessionManager {
-    Task StartAsync(RealisticSessionContext context, CancellationToken ct);
+public interface IRealisticSessionManager : INotifyPropertyChanged {
+    Task<ServiceResult<string>> StartNewSessionAsync(RealisticSessionContext context, CancellationToken ct);
     Task StopAsync(CancellationToken ct);
     Task PauseAsync(CancellationToken ct);
     Task ResumeAsync(CancellationToken ct);
-    Task RemoveTemporaryFailuresAsync(CancellationToken ct);
 
     event EventHandler<FailureTriggeredEventArgs>? FailureTriggered;
     event EventHandler<SessionErrorEventArgs>? SessionError;

@@ -287,7 +287,7 @@ public class SimConnectClient : ISimConnectClient, IDisposable {
             Altitude = (int)data.Altitude,
             Heading = (int)data.Heading,
             GroundSpeed = (int)data.GroundSpeed,
-            AirspeedTrue = (int)data.AirspeedTrue,
+            TrueAirspeed = (int)data.AirspeedTrue,
             VerticalSpeed = (int)data.VerticalSpeed,
             IsOnGround = data.IsOnGround == 1,
             FlapsHandleIndex = (int)data.FlapsHandleIndex,

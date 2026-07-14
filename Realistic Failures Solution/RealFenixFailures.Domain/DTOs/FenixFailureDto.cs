@@ -5,4 +5,6 @@ public sealed record FenixFailureDto(
     string Description,
     bool Failed,
     FenixFailureConditionDto? FailureCondition
-);
+) {
+    public bool IsArmed => FailureCondition != null;
+};

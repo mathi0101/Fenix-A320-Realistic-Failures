@@ -5,7 +5,7 @@ public class AircraftSystemWear {
     public int UserAircraftId { get; set; }
     public int WearableSystemId { get; set; }
     public double WearPercentage { get; set; }
-    public DateTimeOffset LastUpdatedAtUtc { get; set; }
+    public DateTimeOffset LastUpdatedAt { get; set; }
 
     public UserAircraft? UserAircraft { get; set; }
     public AircraftWearableSystem? WearableSystem { get; set; }
