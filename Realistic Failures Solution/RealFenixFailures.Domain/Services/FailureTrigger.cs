@@ -36,6 +36,7 @@ public class FailureTrigger : IFailureTrigger {
             if (roll <= cumulative) {
                 return new TriggeredFailure {
                     FenixFailureId = candidate.FenixFailureId,
+                    FlightSessionId = 1,
                     TriggeredAt = timestampUtc,
                     FlightPhase = currentPhase
                 };

@@ -57,7 +57,7 @@ public class FenixApiFailureService : IFenixFailureApiDispatcher {
                 UpdateHealthState(result.MajorGroups.Count > 0);
                 return result;
             }
-        } catch (Exception ex) {
+        } catch (Exception) {
             throw;
         }
 

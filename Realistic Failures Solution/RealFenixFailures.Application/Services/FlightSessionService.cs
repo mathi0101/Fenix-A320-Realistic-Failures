@@ -6,14 +6,14 @@ using RealFenixFailures.Domain.Interfaces.Repositories;
 
 namespace RealFenixFailures.Application.Services;
 
-public class SessionService : ISessionService {
+public class FlightSessionService : IFlightSessionService {
     private readonly IFlightSessionRepository _sessionRepository;
 
-    public SessionService(IFlightSessionRepository sessionRepository) {
+    public FlightSessionService(IFlightSessionRepository sessionRepository) {
         _sessionRepository = sessionRepository;
     }
 
-    public async Task<FlightSession> StartSessionAsync(RiskLevel risk, UserAircraftDto aircraft, CancellationToken cancellationToken) {
+    public async Task<FlightSession> StartNewAsync(RiskLevel risk, UserAircraftDto aircraft, CancellationToken cancellationToken) {
         var session = new FlightSession {
             StartedAt = DateTime.UtcNow,
             RiskLevel = (int)risk,
@@ -22,6 +22,14 @@ public class SessionService : ISessionService {
 
         await _sessionRepository.AddAsync(session, cancellationToken);
         await _sessionRepository.SaveChangesAsync(cancellationToken);
+
+        return session;
+    }
+
+    public async Task<FlightSession> StopAsync(int sessionId, DateTime finishedAt, CancellationToken ct) {
+        var session = await _sessionRepository.GetByIdAsync(sessionId, ct) ?? throw new KeyNotFoundException();
+        session.FinishedAt = DateTime.UtcNow;
+        await _sessionRepository.SaveChangesAsync(ct);
 
         return session;
     }

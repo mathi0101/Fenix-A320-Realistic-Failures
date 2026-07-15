@@ -104,7 +104,7 @@
                             </Style.Triggers>
                         </Style>
                     </Border.Style>
-                    <TextBlock Text="2 · Dashboard" FontSize="10" FontWeight="SemiBold" Foreground="White"/>
+                    <TextBlock Text="2 · Resumen" FontSize="10" FontWeight="SemiBold" Foreground="White"/>
                 </Border>
                 <Border CornerRadius="10" Padding="10,3" Margin="0,0,6,0">
                     <Border.Style>
@@ -291,7 +291,7 @@
                         <!-- Desgaste -->
                         <Border Background="#0D0F14" CornerRadius="8" Padding="14" Margin="0,0,0,14">
                             <StackPanel>
-                                <TextBlock Text="DESGASTE DE SISTEMAS" FontSize="10" FontWeight="Bold"
+                                <TextBlock Text="DESGASTE ACUMULADO" FontSize="10" FontWeight="Bold"
                                            Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,0,0,12"/>
                                 <ItemsControl ItemsSource="{Binding WearSystems}">
                                     <ItemsControl.ItemTemplate>
@@ -305,7 +305,7 @@
                                                 <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="11"
                                                            Foreground="{StaticResource Brush.Text.Secondary}" VerticalAlignment="Center"/>
                                                 <ProgressBar Grid.Column="1" Style="{StaticResource WearBarStyle}"
-                                                             Minimum="0" Maximum="100" Value="{Binding WearPercentage}"
+                                                             Minimum="0" Maximum="100" Value="{Binding WearPercentage, Mode=OneWay}"
                                                              Foreground="{Binding WearBrush}" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="2" Text="{Binding PercentDisplay}" FontSize="11"
                                                            Foreground="{StaticResource Brush.Text.Primary}"
@@ -318,7 +318,7 @@
                         </Border>
 
                         <!-- Historial de sesiones -->
-                        <TextBlock Text="HISTORIAL DE SESIONES" FontSize="10" FontWeight="Bold"
+                        <TextBlock Text="HISTORIAL DE VUELOS" FontSize="10" FontWeight="Bold"
                                    Foreground="{StaticResource Brush.Text.Secondary}" Margin="0,0,0,8"/>
                         <TextBlock Text="Sin sesiones registradas para esta aeronave."
                                    FontSize="12" Foreground="{StaticResource Brush.Text.Secondary}"

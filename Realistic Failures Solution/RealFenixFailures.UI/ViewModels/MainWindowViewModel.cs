@@ -30,16 +30,10 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
     private bool isSimConnected = false;
     private bool isFenixConnected = false;
 
-    // Active mode (representa el modo "ejecutándose")
-    private UserAppMode _activeMode = UserAppMode.None;
-
     // Panel selection (qué panel muestra la UI para configurar)
     private bool _isRealisticModeSelected;
     private bool _isTrainingModeSelected = true;
     private bool _isCustomModeSelected;
-
-    // Estado simple de engine (refleja la propiedad pública del orchestrator)
-    private bool _isEngineActive;
 
     // Training
     private TrainingScenarioViewModel? _selectedTrainingScenario;
@@ -47,14 +41,6 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
     // Custom
     private double _globalProbability = 0.2;
     private int _checkIntervalSeconds = 5;
-
-    // Realistic stats
-    private int _totalFlights;
-    private double _totalFlightHours;
-    private int _totalFailuresTriggered;
-    private int _engine1WearPercent;
-    private int _engine2WearPercent;
-    private int _hydraulicsWearPercent;
     #endregion
 
     #region Constructor
@@ -81,9 +67,6 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
         // Commands with canExecute where it makes sense
         RefreshCommand = new RelayCommand(async () => await RefreshAsync());
 
-        ToggleEngineCommand = new RelayCommand(async () => await ToggleRealisticModeAsync(), () => CanToggleRealistic);
-        ToggleRealisticModeCommand = new RelayCommand(async () => await ToggleRealisticModeAsync(), () => CanToggleRealistic);
-
         ApplySettingsCommand = new RelayCommand(ApplySettings);
 
         SelectTrainingScenarioCommand = new RelayCommand<TrainingScenarioViewModel>(SelectTrainingScenario);
@@ -106,8 +89,6 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
 
     // Commands
     public RelayCommand RefreshCommand { get; }
-    public RelayCommand ToggleEngineCommand { get; }
-    public RelayCommand ToggleRealisticModeCommand { get; }
     public RelayCommand ApplySettingsCommand { get; }
     public RelayCommand<TrainingScenarioViewModel> SelectTrainingScenarioCommand { get; }
     public RelayCommand StartTrainingScenarioCommand { get; }
@@ -201,32 +182,7 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
     public bool IsEngineActive => _orchestrator.IsEngineActive;
 
     // Control local del modo activo (se actualiza al activar/desactivar via orchestrator)
-    private UserAppMode ActiveMode {
-        get => _activeMode;
-        set {
-            if (_activeMode == value) return;
-            _activeMode = value;
-            OnPropertyChanged(nameof(IsAnyModeActive));
-            OnPropertyChanged(nameof(CanSwitchModes));
-
-            OnPropertyChanged(nameof(IsTrainingActive));
-            OnPropertyChanged(nameof(IsCustomActive));
-            OnPropertyChanged(nameof(IsRealisticActive));
-
-            OnPropertyChanged(nameof(TrainingStartText));
-            OnPropertyChanged(nameof(RealisticToggleText));
-            OnPropertyChanged(nameof(CustomModeButtonText));
-
-            OnPropertyChanged(nameof(CanActivateCustomPreset));
-            OnPropertyChanged(nameof(CanStartTraining));
-            OnPropertyChanged(nameof(CanToggleRealistic));
-
-            OnPropertyChanged(nameof(EngineToggleText));
-
-            // Re-evaluar comandos
-            UpdateCommandStates();
-        }
-    }
+    private UserAppMode ActiveMode => _orchestrator.CurrentMode;
 
     public bool IsAnyModeActive => ActiveMode != UserAppMode.None;
     public bool CanSwitchModes => ActiveMode == UserAppMode.None;
@@ -304,55 +260,6 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
         set => SetProperty(ref _checkIntervalSeconds, value);
     }
 
-    // Realistic stats
-    public int TotalFlights { get => _totalFlights; set => SetProperty(ref _totalFlights, value); }
-    public double TotalFlightHours { get => _totalFlightHours; set => SetProperty(ref _totalFlightHours, value); }
-    public int TotalFailuresTriggered { get => _totalFailuresTriggered; set => SetProperty(ref _totalFailuresTriggered, value); }
-
-    public int Engine1WearPercent {
-        get => _engine1WearPercent;
-        set {
-            if (SetProperty(ref _engine1WearPercent, value)) {
-                OnPropertyChanged(nameof(Engine1WearColor));
-                OnPropertyChanged(nameof(Engine1WearBrush));
-            }
-        }
-    }
-
-    public int Engine2WearPercent {
-        get => _engine2WearPercent;
-        set {
-            if (SetProperty(ref _engine2WearPercent, value)) {
-                OnPropertyChanged(nameof(Engine2WearColor));
-                OnPropertyChanged(nameof(Engine2WearBrush));
-            }
-        }
-    }
-
-    public int HydraulicsWearPercent {
-        get => _hydraulicsWearPercent;
-        set {
-            if (SetProperty(ref _hydraulicsWearPercent, value)) {
-                OnPropertyChanged(nameof(HydraulicsWearColor));
-                OnPropertyChanged(nameof(HydraulicsWearBrush));
-            }
-        }
-    }
-
-    public Color Engine1WearColor => WearColor(Engine1WearPercent);
-    public Color Engine2WearColor => WearColor(Engine2WearPercent);
-    public Color HydraulicsWearColor => WearColor(HydraulicsWearPercent);
-
-    // Brush properties kept for compatibility con XAML actual (puedes cambiar a converter + resources)
-    public Brush Engine1WearBrush => new SolidColorBrush(Engine1WearColor);
-    public Brush Engine2WearBrush => new SolidColorBrush(Engine2WearColor);
-    public Brush HydraulicsWearBrush => new SolidColorBrush(HydraulicsWearColor);
-
-    private static Color WearColor(int percent) => percent switch {
-        < 40 => Color.FromRgb(34, 197, 94),   // green
-        < 70 => Color.FromRgb(245, 158, 11),  // amber
-        _ => Color.FromRgb(239, 68, 68)       // red
-    };
     #endregion
 
     #endregion
@@ -374,14 +281,15 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
     // Event handler para los cambios en el orquestador
     private async void Orchestrator_PropertyChanged(object? sender, PropertyChangedEventArgs e) {
         // Actualizar la UI cuando cambian las propiedades relevantes del orquestador
-        if (e.PropertyName == nameof(IEngineOrchestrator.IsEngineActive) || e.PropertyName == nameof(IEngineOrchestrator.CurrentMode)) {
+        if (e.PropertyName == nameof(IEngineOrchestrator.IsEngineActive)) {
             OnPropertyChanged(nameof(IsEngineActive));
-            OnPropertyChanged(nameof(ActiveMode));
             OnPropertyChanged(nameof(CanStartEngine));
             OnPropertyChanged(nameof(ShowConnectionWarning));
             OnPropertyChanged(nameof(EngineToggleText));
             UpdateCommandStates();
-
+        }
+        if (e.PropertyName == nameof(IEngineOrchestrator.CurrentMode)) {
+            OnPropertyChanged(nameof(ActiveMode));
         }
         if (e.PropertyName == nameof(IEngineOrchestrator.ConnectionStatus)) {
             var status = _orchestrator.ConnectionStatus;
@@ -435,8 +343,6 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
             // Stop training scenario via orchestrator
             await _orchestrator.StopCurrentModeAsync(CancellationToken.None);
             _logger.LogInformation("Training scenario stopped: {Name}", SelectedTrainingScenario.Name);
-
-            ActiveMode = UserAppMode.None;
             return;
         }
 
@@ -444,8 +350,6 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
 
         // Activate the preset in orchestrator for training mode
         await _orchestrator.StartTrainingPresetAsync(SelectedTrainingScenario.Id, CancellationToken.None);
-
-        ActiveMode = UserAppMode.Training;
         _logger.LogInformation("Training scenario started: {Name}", SelectedTrainingScenario.Name);
 
         // Refresh UI state from orchestrator
@@ -459,8 +363,6 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
         if (ActiveMode == UserAppMode.Custom) {
             await _orchestrator.StopCurrentModeAsync(CancellationToken.None);
             _logger.LogInformation("Custom preset stopped: {Name}", preset.Name);
-
-            ActiveMode = UserAppMode.None;
             return;
         }
 
@@ -469,8 +371,6 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
         // TODO: En modo custom necesitamos decidir si activar inmediatamente o solo armar
         // Por ahora asumimos que activamos inmediatamente
         await _orchestrator.StartCustomModeAsync(preset.Id, true, CancellationToken.None);
-
-        ActiveMode = UserAppMode.Custom;
         _logger.LogInformation("Custom preset triggered: {Name}", preset.Name);
 
         UpdateCommandStates();
@@ -483,25 +383,6 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
         CustomPresets.Remove(preset);
     }
 
-    // Realistic mode toggle: VM delegates entirely to orchestrator.
-    private async Task ToggleRealisticModeAsync() {
-        if (ActiveMode == UserAppMode.Realistic) {
-            await _orchestrator.StopCurrentModeAsync(CancellationToken.None);
-            ActiveMode = UserAppMode.None;
-            return;
-        }
-
-        if (IsAnyModeActive) return;
-
-        await _orchestrator.StartRealisticModeAsync(0, RiskLevel.Moderate, CancellationToken.None);
-
-        ActiveMode = UserAppMode.Realistic;
-        _logger.LogInformation("Realistic mode activated (orchestrator handles polling/triggers).");
-
-        UpdateCommandStates();
-        await RefreshLogsAsync();
-        await RefreshRealisticStatsAsync();
-    }
 
     private void ApplySettings() {
         GlobalProbability = Math.Clamp(GlobalProbability, 0, 1);
@@ -534,7 +415,6 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
         }
         UpdateCommandStates();
         await RefreshLogsAsync();
-        await RefreshRealisticStatsAsync();
     }
 
 
@@ -548,24 +428,10 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
         }
     }
 
-    private async Task RefreshRealisticStatsAsync() {
-        var stats = await _flightHistoryService.GetStatsAsync(CancellationToken.None);
-        if (stats is not null) {
-            TotalFlights = stats.TotalFlights;
-            TotalFlightHours = stats.TotalFlightHours;
-            TotalFailuresTriggered = stats.TotalFailuresTriggered;
-            Engine1WearPercent = stats.Engine1WearPercent;
-            Engine2WearPercent = stats.Engine2WearPercent;
-            HydraulicsWearPercent = stats.HydraulicsWearPercent;
-        }
-    }
-
     // ----- Helpers -----
     private void UpdateCommandStates() {
         // Asumo que tu RelayCommand tiene RaiseCanExecuteChanged(); si tu implementación tiene otro nombre, ajustalo.
         RefreshCommand?.RaiseCanExecuteChanged();
-        ToggleEngineCommand?.RaiseCanExecuteChanged();
-        ToggleRealisticModeCommand?.RaiseCanExecuteChanged();
         StartTrainingScenarioCommand?.RaiseCanExecuteChanged();
         ActivateCustomPresetCommand?.RaiseCanExecuteChanged();
         CreateCustomPresetCommand?.RaiseCanExecuteChanged();

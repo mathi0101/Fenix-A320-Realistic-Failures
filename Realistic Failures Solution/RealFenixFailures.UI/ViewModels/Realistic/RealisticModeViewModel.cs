@@ -19,6 +19,7 @@ namespace RealFenixFailures.UI.ViewModels.Realistic;
 /// (estado de conexión / fase de vuelo / arranque del motor de fallas).
 /// </summary>
 public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
+    #region Fields
 
     private readonly IUserAircraftService _aircraftService;
     private readonly IEngineOrchestrator _orchestrator;
@@ -45,6 +46,9 @@ public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
     private bool _isSimConnected;
     private bool _isFenixConnected;
     private FlightPhaseEnum _currentFlightPhase = FlightPhaseEnum.Unknown;
+    #endregion
+
+    #region Constructor
 
     public RealisticModeViewModel(
         IUserAircraftService aircraftService,
@@ -78,6 +82,7 @@ public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
         _orchestrator.PropertyChanged += Orchestrator_PropertyChanged;
         SyncConnectionFromOrchestrator();
     }
+    #endregion
 
     #region Commands
 
@@ -376,9 +381,11 @@ public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
             IsLoading = true;
             var dash = await _aircraftService.GetDashboardAsync(aircraftId, CancellationToken.None);
 
-            DashTotalFlights = dash.Aircraft.TotalFlights;
-            DashTotalFlightHours = dash.Aircraft.TotalFlightHours;
-            DashTotalFailures = dash.TotalFailuresTriggered;
+            var validSessions = dash.Sessions.Where(x => x.Duration.HasValue).ToList();
+
+            DashTotalFlights = validSessions.Count;
+            DashTotalFlightHours = Math.Round(validSessions.Sum(x => x.Duration!.Value.TotalHours), 1);
+            DashTotalFailures = validSessions.Sum(x => x.TriggeredFailures.Count);
 
             WearSystems.Clear();
             foreach (var w in dash.SystemWears.OrderBy(x => x.DisplayOrder)) {

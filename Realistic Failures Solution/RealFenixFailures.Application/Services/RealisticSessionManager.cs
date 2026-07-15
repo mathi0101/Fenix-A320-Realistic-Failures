@@ -17,7 +17,7 @@ public class RealisticSessionManager : IRealisticSessionManager {
     private readonly ILoggerFactory _loggerFactory;
     private readonly ISimulatorConnectionService _simulator;
     private readonly IPresetService _presetService;
-    private readonly ISessionService _sessionService;
+    private readonly IFlightSessionService _sessionService;
 
     private SessionEvaluatorEngine? _engine;
     private PeriodicTimer? _evaluationTimer;
@@ -48,7 +48,7 @@ public class RealisticSessionManager : IRealisticSessionManager {
         ILoggerFactory loggerFactory,
         ISimulatorConnectionService simulatorConnectionService,
         IPresetService presetService,
-        ISessionService sessionService) {
+        IFlightSessionService sessionService) {
         _logger = logger;
         _loggerFactory = loggerFactory;
         _simulator = simulatorConnectionService;
@@ -73,9 +73,6 @@ public class RealisticSessionManager : IRealisticSessionManager {
             if (result.Started == false) {
                 return ServiceResult<string>.Fail(new InvalidOperationException(), result.Text);
             }
-
-
-
             _evaluationCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             _evaluationTimer = new PeriodicTimer(TimeSpan.FromSeconds(EvaluationIntervalSeconds));
             _ = Task.Run(() => RunEvaluationLoopAsync(_evaluationCts.Token), _evaluationCts.Token);
@@ -88,13 +85,15 @@ public class RealisticSessionManager : IRealisticSessionManager {
         }
     }
 
-    public Task StopAsync(CancellationToken ct) {
+    public async Task StopAsync(CancellationToken ct) {
+        if (_engine == null) return;
         _evaluationCts?.Cancel();
         _evaluationTimer?.Dispose();
         _evaluationTimer = null;
+        await _engine!.StopSession(ct);
         _engine = null;
         _logger.LogInformation("Realistic session stopped");
-        return Task.CompletedTask;
+        return;
     }
 
     public Task PauseAsync(CancellationToken ct) {

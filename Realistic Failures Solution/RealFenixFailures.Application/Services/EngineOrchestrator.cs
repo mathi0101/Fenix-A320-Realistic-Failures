@@ -16,7 +16,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
     #region Fields
 
     private readonly IPresetService _presetService;
-    private readonly ISessionService _sessionService;
+    private readonly IFlightSessionService _sessionService;
     private readonly ISimulatorConnectionService _simulatorConnectionService;
     private readonly IUserAircraftService _userAircraftService;
     private readonly IRealisticSessionManager _realisticSessionManager;
@@ -101,7 +101,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
     public EngineOrchestrator(
         IPresetService presetService,
-        ISessionService sessionService,
+        IFlightSessionService sessionService,
         ISimFlightDataProvider flightDataProvider,
         IFailureTrigger failureTrigger,
         ISimulatorConnectionService simulatorService,

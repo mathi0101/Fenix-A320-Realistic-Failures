@@ -66,6 +66,7 @@ public class UserAircraftService : IUserAircraftService {
     public async Task<AircraftDashboardDto> GetDashboardAsync(int userAircraftId, CancellationToken ct) {
         var aircraft = await _dbContext.UserAircrafts
             .Include(x => x.SystemWears)
+            .ThenInclude(x => x.WearableSystem)
             .Include(x => x.FlightSessions)
                 .ThenInclude(s => s.TriggeredFailures)
             .FirstOrDefaultAsync(x => x.Id == userAircraftId, ct)
@@ -96,6 +97,9 @@ public class UserAircraftService : IUserAircraftService {
             .Include(s => s.TriggeredFailures)
             .Select(s => new FlightSessionDto {
                 Id = s.Id,
+                RiskLevel = s.RiskLevel,
+                StartedAt = s.StartedAt,
+                FinishedAt = s.FinishedAt,
                 TriggeredFailures = s.TriggeredFailures
                     .Select(f => new TriggeredFailureDto {
                         Id = f.Id,

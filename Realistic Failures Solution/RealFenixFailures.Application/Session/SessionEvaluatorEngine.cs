@@ -34,7 +34,7 @@ public class SessionEvaluatorEngine : INotifyPropertyChanged {
     #region Fields
     private readonly ISimulatorConnectionService _simulator;
     private readonly ILogger<SessionEvaluatorEngine> _logger;
-    private readonly ISessionService _sessionService;
+    private readonly IFlightSessionService _sessionService;
     private readonly IPresetService _presetService;
     private readonly Random _random = Random.Shared;
 
@@ -52,8 +52,8 @@ public class SessionEvaluatorEngine : INotifyPropertyChanged {
 
     #endregion
 
-    public RealisticSessionState State {
-        get => _state ?? throw new InvalidOperationException();
+    public RealisticSessionState? State {
+        get => _state;
         private set => _state = value;
     }
     #endregion
@@ -62,7 +62,7 @@ public class SessionEvaluatorEngine : INotifyPropertyChanged {
     public SessionEvaluatorEngine(
         ISimulatorConnectionService simulator,
         ILogger<SessionEvaluatorEngine> logger,
-        ISessionService sessionService,
+        IFlightSessionService sessionService,
         IPresetService presetService) {
         _simulator = simulator ?? throw new ArgumentNullException(nameof(simulator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -84,13 +84,20 @@ public class SessionEvaluatorEngine : INotifyPropertyChanged {
         else if (!isAircraftParkedAndEnginesOff)
             msg = "Aircraft must be on gate with all engines off";
 
-        var newSession = await _sessionService.StartSessionAsync(context.RiskLevel, context.Aircraft, ct);
+        var newSession = await _sessionService.StartNewAsync(context.RiskLevel, context.Aircraft, ct);
         State = new RealisticSessionState(newSession, context.Aircraft) {
             AvailablePresets = (await _presetService.GetRealisticPresetsAsync(ct)).ToList()
         };
         isRunning = true;
 
         return new StartSessionResult(isFullSimConnected && isAircraftParkedAndEnginesOff, msg);
+    }
+
+    public async Task StopSession(CancellationToken ct) {
+        if (!isRunning || State == null) return;
+        await _sessionService.StopAsync(State!.Session.Id, DateTime.UtcNow, ct);
+        State = null;
+        isRunning = false;
     }
 
     /// <summary>
@@ -121,7 +128,7 @@ public class SessionEvaluatorEngine : INotifyPropertyChanged {
         var rawData = rawSimulatorDataResult.Value!;
         var failures = fenixFailuresResult.Value!;
 
-        State.FlightPhase = conn.CurrentFlightPhase;
+        State!.FlightPhase = conn.CurrentFlightPhase;
 
         var snapshot = GetSnapshot(rawData, failures);
         State.ArmedFenixFailures = snapshot.FenixFailures.Where(x => x.IsArmed).ToList();
@@ -177,6 +184,7 @@ public class SessionEvaluatorEngine : INotifyPropertyChanged {
     }
 
     private SimulatorSnapshot GetSnapshot(SimulatorAircraftState raw, AllFenixFailuresResponseDto fenixFailures) {
+        if (State == null) throw new ArgumentNullException();
         return new SimulatorSnapshot(
         FlightPhase: State.FlightPhase,
         Engine1Running: raw.Engine1Running,
@@ -188,6 +196,8 @@ public class SessionEvaluatorEngine : INotifyPropertyChanged {
         CapturedAt: DateTime.UtcNow,
         fenixFailures.GetFailuresList());
     }
+
+
     #endregion
 
     #endregion

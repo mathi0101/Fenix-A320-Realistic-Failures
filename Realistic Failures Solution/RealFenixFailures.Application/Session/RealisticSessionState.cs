@@ -36,12 +36,12 @@ public class RealisticSessionState : INotifyPropertyChanged {
         }
     }
 
-    public List<FailurePreset> AvailablePresets { get; internal set; }
-    public List<PresetFailureDefinition> ExecutedFailures { get; internal set; }
+    public List<FailurePreset> AvailablePresets { get; internal set; } = [];
+    public List<PresetFailureDefinition> ExecutedFailures { get; internal set; } = [];
     public List<FailurePreset> ExecutedPresets => ExecutedFailures.Where(x => x.Preset != null).Select(f => f.Preset!).ToList();
 
-    public IReadOnlyList<FenixFailureDto> ArmedFenixFailures { get; internal set; }
-    public IReadOnlyList<FenixFailureDto> ActivatedFenixFailures { get; internal set; }
+    public IReadOnlyList<FenixFailureDto> ArmedFenixFailures { get; internal set; } = [];
+    public IReadOnlyList<FenixFailureDto> ActivatedFenixFailures { get; internal set; } = [];
     #endregion
 
     #region Constructor
