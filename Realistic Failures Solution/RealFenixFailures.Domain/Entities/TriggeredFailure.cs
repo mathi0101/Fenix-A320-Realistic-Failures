@@ -7,7 +7,7 @@ public class TriggeredFailure {
     public required int FlightSessionId { get; set; }
     public required string FenixFailureId { get; set; }
     public DateTime TriggeredAt { get; set; }
-    public FlightPhaseEnum FlightPhase { get; set; }
+    public ComplexFlightPhaseEnum FlightPhase { get; set; }
 
     public FlightSession? FlightSession { get; set; }
     public FenixFailureDefinition? FenixFailure { get; set; }

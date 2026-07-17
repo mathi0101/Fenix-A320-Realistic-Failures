@@ -11,7 +11,7 @@ public class FailureRuleEvaluator : IFailureRuleEvaluator {
         _random = Random.Shared;
     }
 
-    public IReadOnlyList<PresetFailureDefinition> EvaluateEligibleFailures(IEnumerable<PresetFailureDefinition> candidates, FlightPhaseEnum currentPhase) {
+    public IReadOnlyList<PresetFailureDefinition> EvaluateEligibleFailures(IEnumerable<PresetFailureDefinition> candidates, ComplexFlightPhaseEnum currentPhase) {
         throw new NotImplementedException();
     }
 

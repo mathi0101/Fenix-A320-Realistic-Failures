@@ -5,12 +5,15 @@ namespace RealFenixFailures.Integrations.SimConnect;
 
 public class MockSimConnectClient : ISimConnectClient {
     private bool _isConnected;
-    private SimAircraftState _aircraftState;
+    private SimConnectAircraftState _aircraftState;
+
+    public event Action<SimConnectAircraftState>? OnAircraftStateChanged;
+    public event Action<bool>? OnConnectionStateChanged;
 
     // Constructor que permite configurar las respuestas por defecto
-    public MockSimConnectClient(bool isConnected = true, SimAircraftState aircraftState = null) {
+    public MockSimConnectClient(bool isConnected = true, SimConnectAircraftState aircraftState = null) {
         _isConnected = isConnected;
-        _aircraftState = aircraftState ?? new SimAircraftState { IsConnected = true, IsOnGround = true };
+        _aircraftState = aircraftState ?? new SimConnectAircraftState { IsConnected = true, IsOnGround = true };
     }
 
     // Método para actualizar manualmente el estado de conexión
@@ -19,7 +22,7 @@ public class MockSimConnectClient : ISimConnectClient {
     }
 
     // Método para actualizar manualmente el estado del avión
-    public void SetAircraftState(SimAircraftState aircraftState) {
+    public void SetAircraftState(SimConnectAircraftState aircraftState) {
         _aircraftState = aircraftState;
     }
 
@@ -27,7 +30,7 @@ public class MockSimConnectClient : ISimConnectClient {
         return Task.FromResult(_isConnected);
     }
 
-    public Task<SimAircraftState> GetAircraftStateAsync(CancellationToken cancellationToken) {
+    public Task<SimConnectAircraftState> GetAircraftStateAsync(CancellationToken cancellationToken) {
         return Task.FromResult(_aircraftState);
     }
 }

@@ -16,7 +16,7 @@ public class FlightSessionService : IFlightSessionService {
     public async Task<FlightSession> StartNewAsync(RiskLevel risk, UserAircraftDto aircraft, CancellationToken cancellationToken) {
         var session = new FlightSession {
             StartedAt = DateTime.UtcNow,
-            RiskLevel = (int)risk,
+            RiskLevel = risk,
             UserAircraftId = aircraft.Id,
         };
 

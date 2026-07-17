@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Linq;
-using RealFenixFailures.Application.DTOs;
+﻿using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.UI.ViewModels.Base;
+using System.Collections.ObjectModel;
 
 namespace RealFenixFailures.UI.ViewModels.Realistic;
 
@@ -14,7 +12,7 @@ public sealed class FlightSessionItemViewModel : ObservableObject {
         Id = dto.Id;
         StartedAt = dto.StartedAt;
         FinishedAt = dto.FinishedAt;
-        RiskLevel = dto.RiskLevel;
+        RiskLevel = (int)dto.RiskLevel;
         Duration = dto.Duration;
         FailureCount = dto.FailureCount;
         TriggeredFailures = new ObservableCollection<TriggeredFailureItemViewModel>(

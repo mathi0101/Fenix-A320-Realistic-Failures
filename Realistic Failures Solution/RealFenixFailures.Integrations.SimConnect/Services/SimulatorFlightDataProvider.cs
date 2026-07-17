@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.Application.Interfaces;
+using RealFenixFailures.Domain.Enums;
 using RealFenixFailures.Integrations.SimConnect.Interfaces;
 
 namespace RealFenixFailures.Integrations.SimConnect.Services;
@@ -57,11 +58,28 @@ public class SimulatorFlightDataProvider : ISimFlightDataProvider {
         }
     }
 
-    public async Task<SimulatorAircraftState> GetAircraftRawData(CancellationToken ct) {
-        var state = await _client.GetAircraftStateAsync(ct);
-        return new SimulatorAircraftState(state.IsConnected, state.Latitude, state.Longitude, state.Altitude,
-            state.Heading, state.GroundSpeed, state.TrueAirspeed, state.VerticalSpeed, state.IsOnGround, state.FlapsHandleIndex,
-            state.Engine1Running, state.Engine2Running, state.ThrottlePercent1, state.ThrottlePercent2, state.RadioHeight);
+    public async Task<SimulatorAircraftStateSnapshot> GetAircraftRawData(CancellationToken ct) {
+        var s = await _client.GetAircraftStateAsync(ct);
+        return new SimulatorAircraftStateSnapshot() {
+            FlightPhase = s.IsOnGround ? SimpleFlightPhaseEnum.OnGround : SimpleFlightPhaseEnum.Flying,
+            IsOnGround = s.IsOnGround,
+            AltitudeMSL = s.AltitudeMSL,
+            IndicatedAltitude = s.IndicatedAltitude,
+            GroundSpeed = s.GroundSpeed,
+            VerticalSpeed = s.VerticalSpeed,
+            Engine1Combustion = s.Engine1Combustion == 1,
+            Engine2Combustion = s.Engine2Combustion == 1,
+            Engine1N1Percent = s.Engine1N1Percent,
+            Engine2N1Percent = s.Engine2N1Percent,
+            TrueAirspeed = s.TrueAirspeed,
+            FlapsHandleIndex = s.FlapsHandleIndex,
+            Heading = s.Heading,
+            Latitude = s.Latitude,
+            Longitude = s.Longitude,
+            AltitudeAGL = s.RadioHeight,
+            ThrottlePercent1 = s.ThrottlePercent1,
+            ThrottlePercent2 = s.ThrottlePercent2,
+        };
     }
 
 

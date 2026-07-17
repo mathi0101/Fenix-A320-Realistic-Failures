@@ -16,7 +16,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
     #region Fields
 
     private readonly IPresetService _presetService;
-    private readonly IFlightSessionService _sessionService;
     private readonly ISimulatorConnectionService _simulatorConnectionService;
     private readonly IUserAircraftService _userAircraftService;
     private readonly IRealisticSessionManager _realisticSessionManager;
@@ -26,9 +25,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
     private readonly ConcurrentBag<FailureTriggerLogDto> _recentLogs = new();
     private readonly SemaphoreSlim _operationLock = new(1, 1);
-
-    private readonly CancellationTokenSource _realisticEngineCts = new();
-    private PeriodicTimer? _realisticEngineTimer;
 
     private FailurePreset? _activePreset;
 
@@ -45,7 +41,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
     private bool isEngineActive;
     private bool isTimerRunning;
     private UserAppMode currentMode = UserAppMode.None;
-    private ConnectionStatusDto connectionStatus = new(false, false, FlightPhaseEnum.ColdAndDark);
+    private ConnectionStatusDto connectionStatus = new(false, false, SimpleFlightPhaseEnum.OnGround);
 
     public bool IsEngineActive {
         get => isEngineActive;
@@ -101,8 +97,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
     public EngineOrchestrator(
         IPresetService presetService,
-        IFlightSessionService sessionService,
-        ISimFlightDataProvider flightDataProvider,
         IFailureTrigger failureTrigger,
         ISimulatorConnectionService simulatorService,
         IUserAircraftService userAircraftService,
@@ -110,7 +104,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
         IOptions<FailureEngineSettings> settings,
         ILogger<EngineOrchestrator> logger) {
         _presetService = presetService;
-        _sessionService = sessionService;
         _simulatorConnectionService = simulatorService;
         _userAircraftService = userAircraftService;
         _realisticSessionManager = realisticSessionManager;
@@ -195,7 +188,7 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
             //var systemWears = await _userAircraftService.GetSystemWearsAsync(aircraft.Id, ct);
 
-            var context = new RealisticSessionContext(
+            var context = new RealisticModeContext(
                 risk,
                 aircraft
             );
@@ -287,17 +280,8 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
             if (activateImmediately) {
                 foreach (var def in _activePreset.PresetFailureDefinitions) {
                     await _simulatorConnectionService.ExecuteFailureAsync(def, ct);
-
-                    var log = new FailureTriggerLogDto(
-                        DateTime.UtcNow,
-                        def.FenixFailureId,
-                        def.FenixFailure!.Name,
-                        (await _simulatorConnectionService.GetConnectionStatusAsync(ct)).CurrentFlightPhase,
-                        _activePreset.Name);
-                    _recentLogs.Add(log);
                 }
 
-                StartPolling();
             } else {
                 var armedFailures = await _simulatorConnectionService.ExecutePresetAsync(_activePreset, ct);
 
@@ -340,8 +324,6 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
                 await _realisticSessionManager.StopAsync(ct);
             }
 
-            StopPolling();
-
             await _simulatorConnectionService.ResetAllFailuresAsync(ct);
 
             _activePreset = null;
@@ -364,61 +346,14 @@ public class EngineOrchestrator : IEngineOrchestrator, IDisposable {
 
     #region Internal Logic
 
-    private void StartPolling() {
-        StopPolling();
-        _realisticEngineTimer = new PeriodicTimer(TimeSpan.FromSeconds(_settings.CheckIntervalSeconds));
-        _ = Task.Run(RunPollingLoopAsync, _realisticEngineCts.Token);
-    }
 
-    private void StopPolling() {
-        _realisticEngineTimer?.Dispose();
-        _realisticEngineTimer = null;
-    }
-
-    private async Task RunPollingLoopAsync() {
-        if (_realisticEngineTimer == null) return;
-
-        try {
-            await PollAndTriggerAsync(_realisticEngineCts.Token);
-
-            while (await _realisticEngineTimer.WaitForNextTickAsync(_realisticEngineCts.Token) && !_realisticEngineCts.Token.IsCancellationRequested) {
-                await PollAndTriggerAsync(_realisticEngineCts.Token);
-            }
-        } catch (OperationCanceledException) {
-            _logger.LogInformation("Polling loop canceled.");
-        } catch (Exception ex) {
-            _logger.LogError(ex, "Unexpected error in polling loop.");
-        }
-    }
-
-    private async Task PollAndTriggerAsync(CancellationToken ct) {
-        if (!IsEngineActive || _activePreset == null)
-            return;
-
-        if (!connectionStatus.IsSimConnectConnected || !connectionStatus.IsFenixConnected)
-            return;
-
-        throw new NotImplementedException();
-
-        await _operationLock.WaitAsync(ct);
-        try {
-            var phase = connectionStatus.CurrentFlightPhase;
-        } catch (Exception ex) {
-            _logger.LogError(ex, "Error while polling for failure triggers.");
-        } finally {
-            _operationLock.Release();
-        }
-    }
 
     #endregion
 
     #region Dispose
 
     public void Dispose() {
-        _realisticEngineCts.Cancel();
-        _realisticEngineTimer?.Dispose();
         _operationLock.Dispose();
-        _realisticEngineCts.Dispose();
     }
     #endregion
 }

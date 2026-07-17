@@ -7,7 +7,7 @@ public record PresetDto {
     public required string Name { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
     public PresetTypeEnum PresetType { get; init; }
-    public required FlightPhaseEnum Phase { get; init; }
+    public required ComplexFlightPhaseEnum Phase { get; init; }
     public required DifficultyEnum Difficulty { get; init; }
     public string TriggerDescription { get; init; } = string.Empty;
 

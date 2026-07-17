@@ -66,20 +66,20 @@ public class UserAircraftService : IUserAircraftService {
     public async Task<AircraftDashboardDto> GetDashboardAsync(int userAircraftId, CancellationToken ct) {
         var aircraft = await _dbContext.UserAircrafts
             .Include(x => x.SystemWears)
-            .ThenInclude(x => x.WearableSystem)
+                .ThenInclude(x => x.WearableSystem)
             .Include(x => x.FlightSessions)
                 .ThenInclude(s => s.TriggeredFailures)
+                    .ThenInclude(s => s.FenixFailure)
             .FirstOrDefaultAsync(x => x.Id == userAircraftId, ct)
             ?? throw new KeyNotFoundException($"UserAircraft {userAircraftId} not found.");
 
-        var sessions = await GetSessionsAsync(userAircraftId, ct);
+        //var sessions = await GetAircraftSessionsAsync(userAircraftId, ct);
 
         return new AircraftDashboardDto {
             Aircraft = ToDto(aircraft),
             SystemWears = aircraft.SystemWears
                 .Select(ToSystemWearDto)
                 .ToList(),
-            Sessions = sessions,
             TotalFailuresTriggered = aircraft.FlightSessions
                 .SelectMany(s => s.TriggeredFailures)
                 .Count()
@@ -90,26 +90,13 @@ public class UserAircraftService : IUserAircraftService {
     // Sessions
     // -------------------------------------------------------------------------
 
-    public async Task<IReadOnlyList<FlightSessionDto>> GetSessionsAsync(int userAircraftId, CancellationToken ct) {
+    public async Task<IReadOnlyList<FlightSessionDto>> GetAircraftSessionsAsync(int userAircraftId, CancellationToken ct) {
         return await _dbContext.FlightSessions
             .Where(s => s.UserAircraftId == userAircraftId)
             .OrderByDescending(s => s.StartedAt)
             .Include(s => s.TriggeredFailures)
-            .Select(s => new FlightSessionDto {
-                Id = s.Id,
-                RiskLevel = s.RiskLevel,
-                StartedAt = s.StartedAt,
-                FinishedAt = s.FinishedAt,
-                TriggeredFailures = s.TriggeredFailures
-                    .Select(f => new TriggeredFailureDto {
-                        Id = f.Id,
-                        FenixFailureId = f.FenixFailureId,
-                        FailureName = f.FenixFailure!.Name,
-                        TriggeredAt = f.TriggeredAt,
-                        FlightPhase = (int)f.FlightPhase
-                    })
-                    .ToList()
-            })
+            .ThenInclude(s => s.FenixFailure)
+            .Select(s => ToSessionDto(s))
             .ToListAsync(ct);
     }
 
@@ -134,16 +121,34 @@ public class UserAircraftService : IUserAircraftService {
         IcaoTypeCode = aircraft.IcaoTypeCode,
         TotalFlightHours = aircraft.TotalFlightHours,
         TotalFlights = aircraft.TotalFlights,
-        CreatedAt = aircraft.CreatedAt
+        CreatedAt = aircraft.CreatedAt,
+        SystemsWear = aircraft.SystemWears.Select(ToSystemWearDto).ToArray(),
+        FlightSessions = aircraft.FlightSessions.Select(ToSessionDto).ToArray()
     };
 
     private static AircraftSystemWearDto ToSystemWearDto(AircraftSystemWear w) => new() {
-        WearableSystemId = w.Id,
         UserAircraftId = w.UserAircraftId,
         WearPercentage = w.WearPercentage,
         LastUpdatedAt = w.LastUpdatedAt,
-        SystemName = w.WearableSystem!.Name,
-        ShortName = w.WearableSystem!.ShortName,
-        DisplayOrder = w.WearableSystem!.DisplayOrder
+        SystemWear = new SystemWearDto() {
+            Id = w.WearableSystemId,
+            Name = w.WearableSystem!.Name,
+            ShortName = w.WearableSystem!.ShortName,
+            DisplayOrder = w.WearableSystem!.DisplayOrder
+        },
+    };
+
+    private static FlightSessionDto ToSessionDto(FlightSession f) => new() {
+        Id = f.Id,
+        StartedAt = f.StartedAt,
+        RiskLevel = f.RiskLevel,
+        FinishedAt = f.FinishedAt,
+        TriggeredFailures = f.TriggeredFailures.Select(f => new TriggeredFailureDto {
+            Id = f.Id,
+            FenixFailureId = f.FenixFailureId,
+            FailureName = f.FenixFailure!.Name,
+            TriggeredAt = f.TriggeredAt,
+            FlightPhase = f.FlightPhase
+        }).ToArray(),
     };
 }

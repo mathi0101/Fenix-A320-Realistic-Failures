@@ -1,9 +1,11 @@
+using RealFenixFailures.Domain.Enums;
+
 namespace RealFenixFailures.Domain.Entities;
 
 public class FlightSession {
     public int Id { get; set; }
     public DateTime StartedAt { get; set; }
-    public int RiskLevel { get; set; } // 1- Low | 2- Moderate | 3-Hard
+    public RiskLevel RiskLevel { get; set; } // 1- Low | 2- Moderate | 3-Hard
     public int UserAircraftId { get; set; }
     public DateTime? FinishedAt { get; set; }
 

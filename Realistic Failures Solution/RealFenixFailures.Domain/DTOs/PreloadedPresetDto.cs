@@ -7,7 +7,7 @@ internal record PreloadedPresetDto(
     string Name,
     string Description,
     string TriggerDescription,
-    FlightPhaseEnum Phase,
+    ComplexFlightPhaseEnum Phase,
     DifficultyEnum Difficulty,
     ICollection<PresetFailureDefinition> Failures
 );

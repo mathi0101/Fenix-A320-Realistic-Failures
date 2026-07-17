@@ -24,6 +24,7 @@ public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
     private readonly IUserAircraftService _aircraftService;
     private readonly IEngineOrchestrator _orchestrator;
     private readonly ILogger<RealisticModeViewModel> _logger;
+    private readonly IRealisticSessionManager _realisticSessionManager;
 
     private int _currentStep = 1;
     private bool _isLoading;
@@ -45,7 +46,8 @@ public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
     // Conexión / estado (reflejo del orchestrator)
     private bool _isSimConnected;
     private bool _isFenixConnected;
-    private FlightPhaseEnum _currentFlightPhase = FlightPhaseEnum.Unknown;
+    private ComplexFlightPhaseEnum currentFlightPhase = ComplexFlightPhaseEnum.Unknown;
+    private SimpleFlightPhaseEnum simpleFlightPhase = SimpleFlightPhaseEnum.Disconnected;
     #endregion
 
     #region Constructor
@@ -53,10 +55,12 @@ public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
     public RealisticModeViewModel(
         IUserAircraftService aircraftService,
         IEngineOrchestrator orchestrator,
-        ILogger<RealisticModeViewModel> logger) {
+        ILogger<RealisticModeViewModel> logger,
+        IRealisticSessionManager realisticSessionManager) {
         _aircraftService = aircraftService;
         _orchestrator = orchestrator;
         _logger = logger;
+        _realisticSessionManager = realisticSessionManager;
 
         Aircraft = new ObservableCollection<UserAircraftItemViewModel>();
         WearSystems = new ObservableCollection<WearSystemViewModel>();
@@ -240,11 +244,18 @@ public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
             if (SetProperty(ref _isFenixConnected, value)) RaiseActivationState();
         }
     }
-
-    public FlightPhaseEnum CurrentFlightPhase {
-        get => _currentFlightPhase;
+    public SimpleFlightPhaseEnum SimpleFlightPhase {
+        get => simpleFlightPhase;
         private set {
-            if (SetProperty(ref _currentFlightPhase, value)) {
+            if (SetProperty(ref simpleFlightPhase, value)) {
+                RaiseActivationState();
+            }
+        }
+    }
+    public ComplexFlightPhaseEnum CurrentFlightPhase {
+        get => currentFlightPhase;
+        private set {
+            if (SetProperty(ref currentFlightPhase, value)) {
                 OnPropertyChanged(nameof(CurrentFlightPhaseDisplay));
                 RaiseActivationState();
             }
@@ -254,15 +265,15 @@ public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
     public string CurrentFlightPhaseDisplay {
         get {
             return CurrentFlightPhase switch {
-                FlightPhaseEnum.ColdAndDark => "Cold and Dark",
-                FlightPhaseEnum.Taxi => "Taxing",
-                FlightPhaseEnum.Takeoff => "Takeoff",
-                FlightPhaseEnum.Climb => "Climbing",
-                FlightPhaseEnum.Cruise => "Cruising",
-                FlightPhaseEnum.Descent => "Descending",
-                FlightPhaseEnum.Approach => "Approach",
-                FlightPhaseEnum.Landing => "Landing",
-                FlightPhaseEnum.Parked => "Parked",
+                ComplexFlightPhaseEnum.OnGate => "Cold and Dark",
+                ComplexFlightPhaseEnum.Taxi => "Taxing",
+                ComplexFlightPhaseEnum.Takeoff => "Takeoff",
+                ComplexFlightPhaseEnum.Climb => "Climbing",
+                ComplexFlightPhaseEnum.Cruise => "Cruising",
+                ComplexFlightPhaseEnum.Descent => "Descending",
+                ComplexFlightPhaseEnum.Approach => "Approach",
+                ComplexFlightPhaseEnum.Landing => "Landing",
+                ComplexFlightPhaseEnum.Parked => "Parked",
                 _ => "Unknown"
             };
         }
@@ -270,8 +281,7 @@ public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
 
     public bool IsEngineActive => _orchestrator.IsEngineActive;
 
-    private readonly FlightPhaseEnum[] GroundPhases = [FlightPhaseEnum.ColdAndDark, FlightPhaseEnum.Parked];
-    public bool IsOnGround => GroundPhases.Contains(CurrentFlightPhase);
+    public bool IsOnGround => SimpleFlightPhase == SimpleFlightPhaseEnum.OnGround;
 
     /// <summary>
     /// El motor puede activarse cuando se cumplen TODAS las condiciones.
@@ -381,19 +391,19 @@ public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
             IsLoading = true;
             var dash = await _aircraftService.GetDashboardAsync(aircraftId, CancellationToken.None);
 
-            var validSessions = dash.Sessions.Where(x => x.Duration.HasValue).ToList();
+            var validSessions = dash.Aircraft.FlightSessions.Where(x => x.Duration.HasValue).ToList();
 
             DashTotalFlights = validSessions.Count;
             DashTotalFlightHours = Math.Round(validSessions.Sum(x => x.Duration!.Value.TotalHours), 1);
             DashTotalFailures = validSessions.Sum(x => x.TriggeredFailures.Count);
 
             WearSystems.Clear();
-            foreach (var w in dash.SystemWears.OrderBy(x => x.DisplayOrder)) {
+            foreach (var w in dash.SystemWears.OrderBy(x => x.SystemWear.DisplayOrder)) {
                 WearSystems.Add(new WearSystemViewModel(w));
             }
 
             Sessions.Clear();
-            foreach (var s in dash.Sessions) {
+            foreach (var s in dash.Aircraft.FlightSessions) {
                 Sessions.Add(new FlightSessionItemViewModel(s));
             }
             OnPropertyChanged(nameof(HasSessions));
@@ -451,7 +461,8 @@ public sealed class RealisticModeViewModel : ObservableObject, IDisposable {
         if (status is null) return;
         IsSimConnected = status.IsSimConnectConnected;
         IsFenixConnected = status.IsFenixConnected;
-        CurrentFlightPhase = status.CurrentFlightPhase;
+        SimpleFlightPhase = status.CurrentFlightPhase;
+        CurrentFlightPhase = _realisticSessionManager.SessionState?.CurrentFlightPhase ?? ComplexFlightPhaseEnum.Unknown;
     }
 
     private void RaiseActivationState() {

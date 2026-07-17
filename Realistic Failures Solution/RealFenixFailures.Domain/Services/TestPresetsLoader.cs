@@ -34,7 +34,7 @@ public class TestPresetsLoader : IPresetsLoader {
                 "Engine Failure Before V1",
                 "Falla de motor antes de V1. Requiere rejected takeoff.",
                 "Se dispara antes de alcanzar V1. Procedimiento: RTO.",
-                FlightPhaseEnum.Takeoff,
+                ComplexFlightPhaseEnum.Takeoff,
                 DifficultyEnum.Easy,
                 new List<PresetFailureDefinition>
                 {
@@ -96,7 +96,7 @@ public class TestPresetsLoader : IPresetsLoader {
                 "Engine Failure After V1",
                 "Falla de motor durante el roll de despegue, después de alcanzar V1.",
                 "Se dispara automáticamente al detectar V1 durante el despegue.",
-                FlightPhaseEnum.Takeoff,
+                ComplexFlightPhaseEnum.Takeoff,
                 DifficultyEnum.Hard,
                 new List<PresetFailureDefinition>
                 {
@@ -123,7 +123,7 @@ public class TestPresetsLoader : IPresetsLoader {
                 "Engine Failure After V2",
                 "Falla de motor luego de pasar V2 en ascenso inicial.",
                 "Se dispara al superar V2 en el ascenso inicial.",
-                FlightPhaseEnum.Climb,
+                ComplexFlightPhaseEnum.Climb,
                 DifficultyEnum.Medium,
                 [
                     new() {
@@ -147,7 +147,7 @@ public class TestPresetsLoader : IPresetsLoader {
                 "Hydraulic System Failure",
                 "Pérdida del sistema hidráulico en crucero.",
                 "Se dispara aleatoriamente durante la fase de crucero.",
-                FlightPhaseEnum.Cruise,
+                ComplexFlightPhaseEnum.Cruise,
                 DifficultyEnum.Easy,
                 new List<PresetFailureDefinition>
                 {
@@ -159,7 +159,7 @@ public class TestPresetsLoader : IPresetsLoader {
                 "Dual Bleed Failure",
                 "Falla de sangrado en ambos motores. Pérdida de presurización.",
                 "Se dispara en crucero. Requiere descenso de emergencia.",
-                FlightPhaseEnum.Cruise,
+                ComplexFlightPhaseEnum.Cruise,
                 DifficultyEnum.Medium,
                 new List<PresetFailureDefinition>
                 {
@@ -171,7 +171,7 @@ public class TestPresetsLoader : IPresetsLoader {
                 "GPWS Warning on Approach",
                 "Activación de GPWS durante la aproximación final.",
                 "Se dispara en la aproximación final por debajo de 1000ft AGL.",
-                FlightPhaseEnum.Approach,
+                ComplexFlightPhaseEnum.Approach,
                 DifficultyEnum.Easy,
                 new List<PresetFailureDefinition>
                 {
@@ -183,7 +183,7 @@ public class TestPresetsLoader : IPresetsLoader {
                 "Gear Not Down on Final",
                 "Tren de aterrizaje no baja correctamente en la final.",
                 "Se dispara al seleccionar gear down en la aproximación.",
-                FlightPhaseEnum.Approach,
+                ComplexFlightPhaseEnum.Approach,
                 DifficultyEnum.Medium,
                 new List<PresetFailureDefinition>
                 {

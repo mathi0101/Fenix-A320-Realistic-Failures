@@ -7,9 +7,7 @@ namespace RealFenixFailures.UI.ViewModels.Realistic;
 public sealed class TriggeredFailureItemViewModel : ObservableObject {
     public TriggeredFailureItemViewModel(TriggeredFailureDto dto) {
         FailureName = dto.FailureName;
-        FlightPhaseName = string.IsNullOrWhiteSpace(dto.FlightPhaseName)
-            ? dto.FlightPhase.ToString()
-            : dto.FlightPhaseName;
+        FlightPhaseName = dto.FlightPhase.ToString();
         TriggeredAt = dto.TriggeredAt;
     }
 

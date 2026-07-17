@@ -13,7 +13,7 @@ public class FailurePreset {
         get => (PresetTypeEnum)PresetTypeId;
         set => PresetTypeId = (int)value;
     }
-    public FlightPhaseEnum FlightPhase { get; set; }
+    public ComplexFlightPhaseEnum FlightPhase { get; set; }
     public DifficultyEnum Difficulty { get; set; }
 
     public ICollection<PresetFailureDefinition> PresetFailureDefinitions { get; set; } = new List<PresetFailureDefinition>();

@@ -4,5 +4,5 @@ namespace RealFenixFailures.Application.Interfaces;
 
 public interface ISimFlightDataProvider {
     Task<bool> IsConnectedAsync(CancellationToken ct);
-    Task<SimulatorAircraftState> GetAircraftRawData(CancellationToken ct);
+    Task<SimulatorAircraftStateSnapshot> GetAircraftRawData(CancellationToken ct);
 }

@@ -25,7 +25,7 @@ public class PresetsLoader : IPresetsLoader {
     }
 
     private FailurePreset MapToFailurePreset(JsonPreloadedPresetDto dto) {
-        var phase = JsonEnumParser.ParseEnum(dto.Phase, FlightPhaseEnum.Unknown);
+        var phase = JsonEnumParser.ParseEnum(dto.Phase, ComplexFlightPhaseEnum.Unknown);
         var difficulty = JsonEnumParser.ParseEnum(dto.Difficulty, DifficultyEnum.Easy);
 
         var preset = new FailurePreset {

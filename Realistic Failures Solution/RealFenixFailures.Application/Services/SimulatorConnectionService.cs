@@ -29,20 +29,20 @@ public class SimulatorConnectionService : ISimulatorConnectionService {
         var rawData = await _simFlightDataProvider.GetAircraftRawData(ct);
 
         var phase = simConnected
-            ? DetermineFlightPhase(rawData)
-            : FlightPhaseEnum.Unknown;
+            ? (rawData.IsOnGround ? SimpleFlightPhaseEnum.OnGround : SimpleFlightPhaseEnum.Flying)
+            : SimpleFlightPhaseEnum.Disconnected;
 
         return new ConnectionStatusDto(simConnected, fenixConnected, phase);
     }
     #endregion
 
     #region FlightData
-    public async Task<ServiceResult<SimulatorAircraftState>> GetSimulatorData(CancellationToken ct) {
+    public async Task<ServiceResult<SimulatorAircraftStateSnapshot>> GetSimulatorData(CancellationToken ct) {
         try {
-            return ServiceResult<SimulatorAircraftState>.Ok(await _simFlightDataProvider.GetAircraftRawData(ct));
+            return ServiceResult<SimulatorAircraftStateSnapshot>.Ok(await _simFlightDataProvider.GetAircraftRawData(ct));
         } catch (Exception ex) {
             _logger.LogError("GetSimulatorData Error: {a}", ex.Message);
-            return ServiceResult<SimulatorAircraftState>.Fail(ex);
+            return ServiceResult<SimulatorAircraftStateSnapshot>.Fail(ex);
         }
     }
     #endregion
@@ -111,44 +111,6 @@ public class SimulatorConnectionService : ISimulatorConnectionService {
             AfterEventSeconds = int.TryParse(fd.AfterEventSeconds, out var r5) ? r5 : FenixHelper.Intervalos.GetValorRandomIntervalo(fd.AfterEventSeconds)
         };
         return fc;
-    }
-
-    private FlightPhaseEnum DetermineFlightPhase(SimulatorAircraftState state) {
-        if (state.IsOnGround) {
-            if (state.Engine1Running || state.Engine2Running) {
-                if (state.GroundSpeed > 5)
-                    return FlightPhaseEnum.Taxi;
-                else if (state.ThrottlePercent1 > 80 || state.ThrottlePercent2 > 80)
-                    return FlightPhaseEnum.Takeoff;
-                else
-                    return FlightPhaseEnum.Parked;
-            } else {
-                return FlightPhaseEnum.ColdAndDark;
-            }
-        } else {
-            if (state.Altitude < 10000) {
-                if (state.VerticalSpeed > 500)
-                    return FlightPhaseEnum.Climb;
-                else if (state.VerticalSpeed < -500)
-                    return FlightPhaseEnum.Approach;
-                else
-                    return FlightPhaseEnum.Cruise;
-            } else if (state.Altitude >= 10000 && state.Altitude <= 30000) {
-                if (Math.Abs(state.VerticalSpeed) < 200)
-                    return FlightPhaseEnum.Cruise;
-                else if (state.VerticalSpeed > 200)
-                    return FlightPhaseEnum.Climb;
-                else
-                    return FlightPhaseEnum.Descent;
-            } else {
-                if (state.VerticalSpeed > 200)
-                    return FlightPhaseEnum.Climb;
-                else if (state.VerticalSpeed < -200)
-                    return FlightPhaseEnum.Descent;
-                else
-                    return FlightPhaseEnum.Cruise;
-            }
-        }
     }
     #endregion
 }

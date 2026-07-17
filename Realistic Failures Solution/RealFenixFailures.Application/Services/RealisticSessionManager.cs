@@ -8,7 +8,7 @@ namespace RealFenixFailures.Application.Services;
 
 /// <summary>
 /// Owns the realistic-session lifecycle: start/stop/pause/resume, the periodic evaluation timer,
-/// and event dispatch. All failure-evaluation logic is delegated to a <see cref="SessionEvaluatorEngine"/>
+/// and event dispatch. All failure-evaluation logic is delegated to a <see cref="RealisticSessionEngine"/>
 /// instance that is created when a session starts and discarded when it stops.
 /// </summary>
 public class RealisticSessionManager : IRealisticSessionManager {
@@ -19,7 +19,7 @@ public class RealisticSessionManager : IRealisticSessionManager {
     private readonly IPresetService _presetService;
     private readonly IFlightSessionService _sessionService;
 
-    private SessionEvaluatorEngine? _engine;
+    private RealisticSessionEngine? _engine;
     private PeriodicTimer? _evaluationTimer;
     private CancellationTokenSource? _evaluationCts;
     private const int EvaluationIntervalSeconds = 30;
@@ -39,7 +39,7 @@ public class RealisticSessionManager : IRealisticSessionManager {
     #endregion
 
     #region Properties
-    public RealisticSessionState? SessionState => _engine?.State;
+    public RealisticSession? SessionState => _engine?.Session;
     #endregion
 
     #region Constructor
@@ -58,14 +58,14 @@ public class RealisticSessionManager : IRealisticSessionManager {
     #endregion
 
     #region Session Commands
-    public async Task<ServiceResult<string>> StartNewSessionAsync(RealisticSessionContext context, CancellationToken ct) {
+    public async Task<ServiceResult<string>> StartNewSessionAsync(RealisticModeContext context, CancellationToken ct) {
         if (SessionState != null) throw new InvalidOperationException();
         try {
             // Create the evaluation engine for this session. It owns all evaluation logic and mutates
             // the shared RealisticSessionState instance directly.
-            _engine = new SessionEvaluatorEngine(
+            _engine = new RealisticSessionEngine(
                 _simulator,
-                _loggerFactory.CreateLogger<SessionEvaluatorEngine>(),
+                _loggerFactory.CreateLogger<RealisticSessionEngine>(),
                 _sessionService,
                 _presetService);
 

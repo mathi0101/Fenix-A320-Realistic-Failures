@@ -1,16 +1,16 @@
-﻿using System.Windows.Media;
-using RealFenixFailures.Application.DTOs;
+﻿using RealFenixFailures.Application.DTOs;
 using RealFenixFailures.UI.ViewModels.Base;
+using System.Windows.Media;
 
 namespace RealFenixFailures.UI.ViewModels.Realistic;
 
 /// <summary>Barra de desgaste de un sistema (Paso 2) con color dinámico.</summary>
 public sealed class WearSystemViewModel : ObservableObject {
     public WearSystemViewModel(AircraftSystemWearDto dto) {
-        WearableSystemId = dto.WearableSystemId;
-        Name = dto.SystemName;
-        ShortName = dto.ShortName;
-        DisplayOrder = dto.DisplayOrder;
+        WearableSystemId = dto.SystemWear.Id;
+        Name = dto.SystemWear.Name;
+        ShortName = dto.SystemWear.ShortName;
+        DisplayOrder = dto.SystemWear.DisplayOrder;
         WearPercentage = (int)System.Math.Round(dto.WearPercentage);
     }
 

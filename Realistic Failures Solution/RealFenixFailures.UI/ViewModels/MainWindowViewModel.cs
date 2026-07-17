@@ -26,7 +26,7 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
     public RealisticModeViewModel Realistic { get; }
 
     // Connection state
-    private FlightPhaseEnum currentFlightPhase = FlightPhaseEnum.Unknown;
+    private ComplexFlightPhaseEnum currentComplexFlightPhase = ComplexFlightPhaseEnum.Unknown;
     private bool isSimConnected = false;
     private bool isFenixConnected = false;
 
@@ -115,7 +115,7 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
                 OnPropertyChanged(nameof(IsSimConnected));
                 OnPropertyChanged(nameof(SimConnectDotColor));
                 OnPropertyChanged(nameof(SimConnectStatus));
-                OnPropertyChanged(nameof(CurrentFlightPhase));
+                OnPropertyChanged(nameof(CurrentComplexFlightPhase));
             }
         }
     }
@@ -136,26 +136,26 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
     public string FenixStatus => isFenixConnected ? "Connected" : "Disconnected";
 
 
-    public FlightPhaseEnum CurrentFlightPhase {
-        get => currentFlightPhase;
+    public ComplexFlightPhaseEnum CurrentComplexFlightPhase {
+        get => currentComplexFlightPhase;
         private set {
-            if (SetProperty(ref currentFlightPhase, value))
+            if (SetProperty(ref currentComplexFlightPhase, value))
                 OnPropertyChanged(nameof(CurrentFlightPhaseDisplay));
         }
     }
 
     public string CurrentFlightPhaseDisplay {
         get {
-            return CurrentFlightPhase switch {
-                FlightPhaseEnum.ColdAndDark => "Cold and Dark",
-                FlightPhaseEnum.Taxi => "Taxing",
-                FlightPhaseEnum.Takeoff => "Takeoff",
-                FlightPhaseEnum.Climb => "Climbing",
-                FlightPhaseEnum.Cruise => "Cruising",
-                FlightPhaseEnum.Descent => "Descending",
-                FlightPhaseEnum.Approach => "Approach",
-                FlightPhaseEnum.Landing => "Landing",
-                FlightPhaseEnum.Parked => "Parked",
+            return CurrentComplexFlightPhase switch {
+                ComplexFlightPhaseEnum.OnGate => "Cold and Dark",
+                ComplexFlightPhaseEnum.Taxi => "Taxing",
+                ComplexFlightPhaseEnum.Takeoff => "Takeoff",
+                ComplexFlightPhaseEnum.Climb => "Climbing",
+                ComplexFlightPhaseEnum.Cruise => "Cruising",
+                ComplexFlightPhaseEnum.Descent => "Descending",
+                ComplexFlightPhaseEnum.Approach => "Approach",
+                ComplexFlightPhaseEnum.Landing => "Landing",
+                ComplexFlightPhaseEnum.Parked => "Parked",
                 _ => "Unknown"
             };
         }
@@ -295,7 +295,7 @@ public class MainWindowViewModel : ObservableObject, IDisposable {
             var status = _orchestrator.ConnectionStatus;
             IsSimConnected = status.IsSimConnectConnected;
             IsFenixConnected = status.IsFenixConnected;
-            CurrentFlightPhase = _orchestrator.ConnectionStatus.CurrentFlightPhase;
+            CurrentComplexFlightPhase = ComplexFlightPhaseEnum.OnGate;
 
 
             OnPropertyChanged(nameof(SimConnectDotColor));

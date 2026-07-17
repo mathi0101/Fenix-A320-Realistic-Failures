@@ -28,7 +28,7 @@ public class FailureTriggerTests {
         };
 
         // Act
-        var result = _failureTrigger.TryTriggerFailure(preset, FlightPhaseEnum.Cruise, 1.0, DateTime.UtcNow);
+        var result = _failureTrigger.TryTriggerFailure(preset, ComplexFlightPhaseEnum.Cruise, 1.0, DateTime.UtcNow);
 
         // Assert
         Assert.Null(result);
@@ -45,14 +45,14 @@ public class FailureTriggerTests {
             }
         };
 
-        _mockRuleEvaluator.Setup(e => e.EvaluateEligibleFailures(It.IsAny<IEnumerable<PresetFailureDefinition>>(), It.IsAny<FlightPhaseEnum>()))
+        _mockRuleEvaluator.Setup(e => e.EvaluateEligibleFailures(It.IsAny<IEnumerable<PresetFailureDefinition>>(), It.IsAny<ComplexFlightPhaseEnum>()))
                           .Returns(new List<PresetFailureDefinition>(preset.PresetFailureDefinitions));
 
         // Primero NextDouble() -> chequeo global -> devolvemos 0.9 (> 0.5) => no debe continuar
         _mockRandom.SetupNextDouble(0.9);
 
         // Act
-        var result = _failureTrigger.TryTriggerFailure(preset, FlightPhaseEnum.Cruise, 0.5, DateTime.UtcNow);
+        var result = _failureTrigger.TryTriggerFailure(preset, ComplexFlightPhaseEnum.Cruise, 0.5, DateTime.UtcNow);
 
         // Assert
         Assert.Null(result);
@@ -70,7 +70,7 @@ public class FailureTriggerTests {
             }
         };
 
-        _mockRuleEvaluator.Setup(e => e.EvaluateEligibleFailures(It.IsAny<IEnumerable<PresetFailureDefinition>>(), It.IsAny<FlightPhaseEnum>()))
+        _mockRuleEvaluator.Setup(e => e.EvaluateEligibleFailures(It.IsAny<IEnumerable<PresetFailureDefinition>>(), It.IsAny<ComplexFlightPhaseEnum>()))
                           .Returns(new List<PresetFailureDefinition>(preset.PresetFailureDefinitions));
 
         // Encolamos dos valores:
@@ -82,12 +82,12 @@ public class FailureTriggerTests {
         var timestamp = DateTime.UtcNow;
 
         // Act
-        var result = _failureTrigger.TryTriggerFailure(preset, FlightPhaseEnum.Cruise, 0.5, timestamp);
+        var result = _failureTrigger.TryTriggerFailure(preset, ComplexFlightPhaseEnum.Cruise, 0.5, timestamp);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal("FID1", result!.FenixFailureId);
-        Assert.Equal(FlightPhaseEnum.Cruise, result.FlightPhase);
+        Assert.Equal(ComplexFlightPhaseEnum.Cruise, result.FlightPhase);
         Assert.Equal(timestamp, result.TriggeredAt);
     }
 
@@ -222,8 +222,8 @@ public class FailureTriggerTests {
         var failureTrigger = new FailureTrigger(_mockRuleEvaluator.Object, rng);
 
         // Mock para que siempre devuelva todas las definiciones como elegibles
-        _mockRuleEvaluator.Setup(e => e.EvaluateEligibleFailures(It.IsAny<IEnumerable<PresetFailureDefinition>>(), It.IsAny<FlightPhaseEnum>()))
-                          .Returns<IEnumerable<PresetFailureDefinition>, FlightPhaseEnum>((defs, phase) => defs.ToList());
+        _mockRuleEvaluator.Setup(e => e.EvaluateEligibleFailures(It.IsAny<IEnumerable<PresetFailureDefinition>>(), It.IsAny<ComplexFlightPhaseEnum>()))
+                          .Returns<IEnumerable<PresetFailureDefinition>, ComplexFlightPhaseEnum>((defs, phase) => defs.ToList());
 
         const int iterations = 100000;
         var counts = new Dictionary<string, int> {

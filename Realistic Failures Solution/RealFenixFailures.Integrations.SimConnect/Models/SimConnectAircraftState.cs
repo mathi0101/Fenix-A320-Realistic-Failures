@@ -1,54 +1,60 @@
 namespace RealFenixFailures.Integrations.SimConnect.Models;
 
-public class SimAircraftState {
+public class SimConnectAircraftState {
     public bool IsConnected { get; set; }
 
     // Datos de posición y movimiento
     public double Latitude { get; set; }
     public double Longitude { get; set; }
-    public int Altitude { get; set; } // pies
+
+    public int AltitudeMSL { get; set; } // Mean Sea Level
+    public double IndicatedAltitude { get; set; }
+    public int RadioHeight { get; set; }
+
     public int Heading { get; set; } // grados
+    public int VerticalSpeed { get; set; } // pies/minuto
+
     public int GroundSpeed { get; set; } // nudos
     public int TrueAirspeed { get; set; } // nudos
-    public int VerticalSpeed { get; set; } // pies/minuto
 
     // Estado de vuelo
     public bool IsOnGround { get; set; }
     public int FlapsHandleIndex { get; set; }
 
-    // Motores
-    public bool Engine1Running { get; set; }
-    public bool Engine2Running { get; set; }
 
-    // Controles
+
+    public int Engine1Combustion { get; internal set; }
+    public int Engine2Combustion { get; internal set; }
+    public double Engine1N1Percent { get; internal set; }
+    public double Engine2N1Percent { get; internal set; }
     public double ThrottlePercent1 { get; set; }
     public double ThrottlePercent2 { get; set; }
 
-    // Altura radio
-    public int RadioHeight { get; set; }
-
-    public SimAircraftState() {
+    public SimConnectAircraftState() {
         IsConnected = false;
     }
 
     // Método para clonar el estado (útil para evitar referencias compartidas)
-    public SimAircraftState Clone() {
-        return new SimAircraftState() {
+    public SimConnectAircraftState Clone() {
+        return new SimConnectAircraftState() {
             IsConnected = IsConnected,
             Latitude = Latitude,
             Longitude = Longitude,
-            Altitude = Altitude,
+            AltitudeMSL = AltitudeMSL,
+            IndicatedAltitude = IndicatedAltitude,
+            RadioHeight = RadioHeight,
             Heading = Heading,
             GroundSpeed = GroundSpeed,
             TrueAirspeed = TrueAirspeed,
             VerticalSpeed = VerticalSpeed,
             IsOnGround = IsOnGround,
             FlapsHandleIndex = FlapsHandleIndex,
-            Engine1Running = Engine1Running,
-            Engine2Running = Engine2Running,
             ThrottlePercent1 = ThrottlePercent1,
             ThrottlePercent2 = ThrottlePercent2,
-            RadioHeight = RadioHeight
+            Engine1Combustion = Engine1Combustion,
+            Engine2Combustion = Engine2Combustion,
+            Engine1N1Percent = Engine1N1Percent,
+            Engine2N1Percent = Engine2N1Percent
         };
     }
 }

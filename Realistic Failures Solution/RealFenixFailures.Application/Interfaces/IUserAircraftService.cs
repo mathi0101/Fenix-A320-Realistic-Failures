@@ -19,7 +19,7 @@ public interface IUserAircraftService {
     Task<IReadOnlyList<AircraftSystemWearDto>> GetSystemWearsAsync(int userAircraftId, CancellationToken ct);
 
     /// <summary>Historial de sesiones de vuelo de una aeronave, con sus fallas (Paso 2).</summary>
-    Task<IReadOnlyList<FlightSessionDto>> GetSessionsAsync(int userAircraftId, CancellationToken ct);
+    Task<IReadOnlyList<FlightSessionDto>> GetAircraftSessionsAsync(int userAircraftId, CancellationToken ct);
 
     /// <summary>Datos agregados para el dashboard del Paso 2.</summary>
     Task<AircraftDashboardDto> GetDashboardAsync(int userAircraftId, CancellationToken ct);

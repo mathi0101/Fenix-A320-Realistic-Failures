@@ -6,6 +6,6 @@ public sealed record FailureTriggerLogDto(
     DateTimeOffset TriggeredAtUtc,
     string FailureId,
     string FailureName,
-    FlightPhaseEnum FlightPhase,
+    ComplexFlightPhaseEnum FlightPhase,
     string PresetName
 );
